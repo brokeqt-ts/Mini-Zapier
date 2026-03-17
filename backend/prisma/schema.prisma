@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String     @id @default(uuid())
+  email            String     @unique
+  passwordHash     String     @map("password_hash")
+  name             String?
+  telegramChatId   String?    @map("telegram_chat_id")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+
+  workflows        Workflow[]
+
+  @@map("users")
+}
+
+enum WorkflowStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ERROR
+}
+
+model Workflow {
+  id          String         @id @default(uuid())
+  userId      String         @map("user_id")
+  name        String
+  description String?
+  status      WorkflowStatus @default(DRAFT)
+  version     Int            @default(1)
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodes       WorkflowNode[]
+  edges       WorkflowEdge[]
+  executions  Execution[]
+  triggers    TriggerConfig[]
+
+  @@index([userId])
+  @@map("workflows")
+}
+
+enum NodeType {
+  TRIGGER_WEBHOOK
+  TRIGGER_CRON
+  TRIGGER_EMAIL
+  ACTION_HTTP_REQUEST
+  ACTION_EMAIL
+  ACTION_TELEGRAM
+  ACTION_DB_QUERY
+  ACTION_DATA_TRANSFORM
+}
+
+model WorkflowNode {
+  id          String   @id @default(uuid())
+  workflowId  String   @map("workflow_id")
+  type        NodeType
+  label       String
+  config      Json     @default("{}")
+  positionX   Float    @map("position_x")
+  positionY   Float    @map("position_y")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  sourceEdges   WorkflowEdge[] @relation("SourceNode")
+  targetEdges   WorkflowEdge[] @relation("TargetNode")
+  executionLogs ExecutionLog[]
+
+  @@index([workflowId])
+  @@map("workflow_nodes")
+}
+
+model WorkflowEdge {
+  id           String   @id @default(uuid())
+  workflowId   String   @map("workflow_id")
+  sourceNodeId String   @map("source_node_id")
+  targetNodeId String   @map("target_node_id")
+  conditionExpr String? @map("condition_expr")
+
+  workflow    Workflow     @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  sourceNode  WorkflowNode @relation("SourceNode", fields: [sourceNodeId], references: [id], onDelete: Cascade)
+  targetNode  WorkflowNode @relation("TargetNode", fields: [targetNodeId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
+  @@map("workflow_edges")
+}
+
+model TriggerConfig {
+  id          String   @id @default(uuid())
+  workflowId  String   @map("workflow_id")
+  nodeId      String   @map("node_id")
+  type        NodeType
+  config      Json
+  isActive    Boolean  @default(false) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@unique([workflowId, nodeId])
+  @@index([type, isActive])
+  @@map("trigger_configs")
+}
+
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  PAUSED
+  CANCELLED
+}
+
+model Execution {
+  id           String          @id @default(uuid())
+  workflowId   String          @map("workflow_id")
+  status       ExecutionStatus @default(PENDING)
+  triggerData  Json?           @map("trigger_data")
+  context      Json            @default("{}")
+  startedAt    DateTime?       @map("started_at")
+  completedAt  DateTime?       @map("completed_at")
+  errorMessage String?         @map("error_message")
+  retryCount   Int             @default(0) @map("retry_count")
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  workflow     Workflow        @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  logs         ExecutionLog[]
+
+  @@index([workflowId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("executions")
+}
+
+enum LogLevel {
+  INFO
+  WARN
+  ERROR
+  DEBUG
+}
+
+model ExecutionLog {
+  id           String   @id @default(uuid())
+  executionId  String   @map("execution_id")
+  nodeId       String?  @map("node_id")
+  level        LogLevel @default(INFO)
+  message      String
+  inputData    Json?    @map("input_data")
+  outputData   Json?    @map("output_data")
+  error        String?
+  durationMs   Int?     @map("duration_ms")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  execution    Execution    @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  node         WorkflowNode? @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+
+  @@index([executionId])
+  @@index([nodeId])
+  @@map("execution_logs")
+}

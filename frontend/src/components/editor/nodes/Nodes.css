@@ -1,0 +1,75 @@
+.custom-node {
+  background: white;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  min-width: 160px;
+  font-size: 13px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.custom-node:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.node-header {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 6px 6px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.node-delete-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  line-height: 1;
+}
+
+.custom-node:hover .node-delete-btn {
+  opacity: 0.6;
+}
+
+.node-delete-btn:hover {
+  opacity: 1 !important;
+}
+
+.trigger-header {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.action-header {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.trigger-node {
+  border-color: #93c5fd;
+}
+
+.action-node {
+  border-color: #86efac;
+}
+
+.node-body {
+  padding: 8px 10px;
+}
+
+.node-label {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.node-type {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
