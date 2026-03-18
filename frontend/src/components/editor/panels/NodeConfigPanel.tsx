@@ -336,12 +336,11 @@ export function NodeConfigPanel() {
           return (
             <>
               <div className="form-group">
-                <TemplateEditor
-                  label={t.field_url}
+                <label>{t.field_url}</label>
+                <input
+                  className="input"
                   value={val('url')}
-                  onChange={(v) => set('url', v)}
-                  nodes={nodes}
-                  currentNodeId={node.id}
+                  onChange={e => set('url', e.target.value)}
                   placeholder="https://api.example.com/endpoint"
                 />
               </div>
