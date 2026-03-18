@@ -8,6 +8,24 @@ import { useEmailAccountsStore } from '../store/email-accounts.store';
 import { EmailAccount, CreateEmailAccountDto } from '../api/email-accounts.api';
 import './SettingsPage.css';
 
+interface MailProvider {
+  name: string;
+  smtpHost: string;
+  smtpPort: number;
+  imapHost: string;
+  imapPort: number;
+}
+
+const PROVIDERS: MailProvider[] = [
+  { name: 'Яндекс',         smtpHost: 'smtp.yandex.com', smtpPort: 465, imapHost: 'imap.yandex.ru',        imapPort: 993 },
+  { name: 'Gmail',           smtpHost: 'smtp.gmail.com',  smtpPort: 465, imapHost: 'imap.gmail.com',        imapPort: 993 },
+  { name: 'Mail.ru',         smtpHost: 'smtp.mail.ru',    smtpPort: 465, imapHost: 'imap.mail.ru',          imapPort: 993 },
+  { name: 'Outlook / Hotmail', smtpHost: 'smtp-mail.outlook.com', smtpPort: 587, imapHost: 'outlook.office365.com', imapPort: 993 },
+  { name: 'Yahoo Mail',      smtpHost: 'smtp.mail.yahoo.com', smtpPort: 465, imapHost: 'imap.mail.yahoo.com', imapPort: 993 },
+  { name: 'Rambler',         smtpHost: 'smtp.rambler.ru', smtpPort: 465, imapHost: 'imap.rambler.ru',       imapPort: 993 },
+  { name: 'iCloud',          smtpHost: 'smtp.mail.me.com', smtpPort: 587, imapHost: 'imap.mail.me.com',    imapPort: 993 },
+];
+
 /** Maps known SMTP hosts → IMAP host. Falls back to smtp→imap prefix swap. */
 const SMTP_TO_IMAP: Record<string, string> = {
   'smtp.yandex.com':      'imap.yandex.ru',
@@ -173,6 +191,32 @@ function EmailAccountsManager() {
       {showForm && (
         <div className="tg-connect-flow" style={{ marginTop: 12 }}>
           <div className="form-group">
+            <label>{t.provider_select}</label>
+            <select
+              className="input"
+              value={PROVIDERS.find(p => p.smtpHost === form.smtpHost)?.name ?? ''}
+              onChange={e => {
+                const p = PROVIDERS.find(pr => pr.name === e.target.value);
+                if (!p) return;
+                setForm(f => ({
+                  ...f,
+                  smtpHost: p.smtpHost,
+                  smtpPortStr: String(p.smtpPort),
+                  smtpPort: p.smtpPort,
+                  imapHost: p.imapHost,
+                  imapPortStr: String(p.imapPort),
+                  imapPort: p.imapPort,
+                  label: f.label || p.name,
+                }));
+              }}
+            >
+              <option value="">{t.provider_custom}</option>
+              {PROVIDERS.map(p => (
+                <option key={p.smtpHost} value={p.name}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
             <label>{t.account_name}</label>
             <input
               className="input"
@@ -187,7 +231,7 @@ function EmailAccountsManager() {
               <input
                 className="input"
                 style={{ flex: 1 }}
-                placeholder="smtp.yandex.ru"
+                placeholder="smtp.yandex.com"
                 value={form.smtpHost}
                 onChange={e => {
                   const smtpHost = e.target.value;
