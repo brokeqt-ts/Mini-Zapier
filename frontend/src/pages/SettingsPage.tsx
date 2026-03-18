@@ -24,8 +24,6 @@ const PROVIDERS_RELAY: MailProvider[] = [
   { name: 'Outlook / Hotmail', smtpHost: 'smtp-mail.outlook.com', smtpPort: 587, imapHost: 'outlook.office365.com', imapPort: 993 },
 ];
 
-const PROVIDERS_STANDARD: MailProvider[] = [];
-
 const PROVIDERS: MailProvider[] = PROVIDERS_RELAY;
 
 /** Maps known SMTP hosts → IMAP host. Falls back to smtp→imap prefix swap. */
