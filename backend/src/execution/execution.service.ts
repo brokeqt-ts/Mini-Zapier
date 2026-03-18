@@ -24,15 +24,28 @@ export class ExecutionService {
       },
     });
 
-    await this.workflowQueue.add(
-      'execute-workflow',
-      { executionId: execution.id },
-      {
-        jobId: execution.id,
-        removeOnComplete: { count: 500 },
-        removeOnFail: { count: 500 },
-      },
-    );
+    try {
+      await this.workflowQueue.add(
+        'execute-workflow',
+        { executionId: execution.id },
+        {
+          jobId: execution.id,
+          removeOnComplete: { count: 500 },
+          removeOnFail: { count: 500 },
+        },
+      );
+    } catch (e) {
+      // Mark execution as failed immediately if we can't enqueue
+      await this.prisma.execution.update({
+        where: { id: execution.id },
+        data: {
+          status: 'FAILED',
+          completedAt: new Date(),
+          errorMessage: 'Queue unavailable: ' + String(e),
+        },
+      });
+      throw e;
+    }
 
     return execution;
   }

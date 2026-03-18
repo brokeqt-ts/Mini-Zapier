@@ -118,10 +118,16 @@ export class WorkflowsService {
       });
     });
 
-    // If workflow is active, re-register triggers with updated config
+    // If workflow is active, re-register triggers with updated config.
+    // Don't let trigger registration failure block the save response.
     if (workflow.status === 'ACTIVE') {
-      await this.triggersService.unregisterTriggers(id);
-      await this.triggersService.registerTriggers(id);
+      try {
+        await this.triggersService.unregisterTriggers(id);
+        await this.triggersService.registerTriggers(id);
+      } catch (e) {
+        // Log but don't throw — canvas was saved successfully
+        console.error('[saveCanvas] trigger re-registration failed:', e);
+      }
     }
 
     return updated;

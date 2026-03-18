@@ -25,11 +25,19 @@ import { EmailAccountsModule } from './email-accounts/email-accounts.module';
     }),
     BullModule.forRoot({
       connection: process.env.REDIS_URL
-        ? { url: process.env.REDIS_URL }
+        ? {
+            url: process.env.REDIS_URL,
+            enableOfflineQueue: false,
+            maxRetriesPerRequest: null,
+            connectTimeout: 5000,
+          }
         : {
             host: process.env.REDIS_HOST || 'localhost',
             port: parseInt(process.env.REDIS_PORT || '6379', 10),
             password: process.env.REDIS_PASSWORD,
+            enableOfflineQueue: false,
+            maxRetriesPerRequest: null,
+            connectTimeout: 5000,
           },
     }),
     PrismaModule,
