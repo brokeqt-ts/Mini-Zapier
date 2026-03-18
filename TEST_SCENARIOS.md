@@ -4,6 +4,18 @@
 
 ---
 
+## Тестирование через Railway (продакшн)
+
+Сначала один раз задай переменную с адресом Railway в PowerShell:
+
+```powershell
+$BASE = "https://mini-zapier-production-47cd.up.railway.app"
+```
+
+Затем используй `$BASE` во всех командах ниже.
+
+---
+
 ## Как вставлять переменные в шаблоны
 
 В любом поле с надписью «+ Переменная» или `{/}` кликни кнопку — откроется список доступных переменных. Каждая переменная отображается цветной табличкой (чипом).
@@ -64,7 +76,7 @@
 **PowerShell:**
 ```powershell
 $bytes = [System.Text.Encoding]::UTF8.GetBytes('{"message": "привет"}')
-Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/webhooks/webhook-test" `
+Invoke-RestMethod -Method Post -Uri "$BASE/api/webhooks/webhook-test" `
   -ContentType "application/json; charset=utf-8" `
   -Body $bytes
 ```
@@ -201,7 +213,7 @@ curl -X POST http://localhost:3000/api/webhooks/webhook-test \
 **PowerShell:**
 ```powershell
 $bytes = [System.Text.Encoding]::UTF8.GetBytes('{"title": "Ноутбук", "amount": 75000, "customer": "Иван Иванов"}')
-Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/webhooks/order-notify" `
+Invoke-RestMethod -Method Post -Uri "$BASE/api/webhooks/order-notify" `
   -ContentType "application/json; charset=utf-8" `
   -Body $bytes
 ```
@@ -267,7 +279,7 @@ curl -X POST http://localhost:3000/api/webhooks/order-notify \
 **PowerShell:**
 ```powershell
 $bytes = [System.Text.Encoding]::UTF8.GetBytes('{"source": "crm", "message": "Новый контакт добавлен"}')
-Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/webhooks/sync-event" `
+Invoke-RestMethod -Method Post -Uri "$BASE/api/webhooks/sync-event" `
   -ContentType "application/json; charset=utf-8" `
   -Body $bytes
 ```
