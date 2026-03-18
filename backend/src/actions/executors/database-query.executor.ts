@@ -5,20 +5,31 @@ import {
   ActionExecutor,
   ExecutionContext,
 } from './action-executor.interface';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class DatabaseQueryExecutor implements ActionExecutor {
   readonly type = NodeType.ACTION_DB_QUERY;
 
+  constructor(private prisma: PrismaService) {}
+
   async execute(
     config: Record<string, unknown>,
     context: ExecutionContext,
   ): Promise<Record<string, unknown>> {
-    const connectionString = config.connectionString as string;
+    let connectionString = config.connectionString as string;
+
+    if (config.dbConnectionId) {
+      const saved = await this.prisma.dbConnection.findUnique({
+        where: { id: config.dbConnectionId as string },
+      });
+      if (saved) connectionString = saved.connectionString;
+    }
+
     if (!connectionString?.trim()) {
       throw new Error(
         'Узел ACTION_DB_QUERY: не заполнена строка подключения к базе данных. ' +
-        'Укажите CONNECTION_STRING в настройках узла (например: postgresql://user:pass@host:5432/db)',
+        'Добавьте подключение в Настройках или укажите CONNECTION_STRING вручную.',
       );
     }
 

@@ -6,6 +6,7 @@ import { useLangStore } from '../store/language.store';
 import type { T } from '../i18n/translations';
 import { useEmailAccountsStore } from '../store/email-accounts.store';
 import { EmailAccount, CreateEmailAccountDto } from '../api/email-accounts.api';
+import { useDbConnectionsStore } from '../store/db-connections.store';
 import './SettingsPage.css';
 
 interface MailProvider {
@@ -443,6 +444,128 @@ function EmailAccountsManager() {
   );
 }
 
+const DB_SERVICES = [
+  { name: 'Railway',  url: 'https://railway.app/new',           note: 'бесплатно · PostgreSQL' },
+  { name: 'Supabase', url: 'https://supabase.com/dashboard/new', note: 'бесплатно · PostgreSQL' },
+  { name: 'Neon',     url: 'https://console.neon.tech/signup',   note: 'бесплатно · serverless PostgreSQL' },
+];
+
+function DbConnectionsManager() {
+  const { t } = useLangStore();
+  const { connections, loaded, load, add, update, remove } = useDbConnectionsStore();
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [label, setLabel] = useState('');
+  const [connStr, setConnStr] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { if (!loaded) load(); }, [loaded, load]);
+
+  const openAdd = () => { setEditingId(null); setLabel(''); setConnStr(''); setShowForm(true); };
+  const openEdit = (c: { id: string; label: string }) => {
+    setEditingId(c.id); setLabel(c.label); setConnStr(''); setShowForm(true);
+  };
+  const cancelForm = () => { setShowForm(false); setEditingId(null); setLabel(''); setConnStr(''); };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      if (editingId) {
+        const dto: { label?: string; connectionString?: string } = { label };
+        if (connStr) dto.connectionString = connStr;
+        await update(editingId, dto);
+        toast.success(t.db_conn_updated);
+      } else {
+        await add({ label, connectionString: connStr });
+        toast.success(t.db_conn_added);
+      }
+      cancelForm();
+    } catch {
+      toast.error(t.save_error_msg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRemove = async (id: string) => {
+    if (!window.confirm(t.db_conn_delete_confirm)) return;
+    try { await remove(id); toast.success(t.db_conn_deleted); }
+    catch { toast.error(t.delete_error_msg); }
+  };
+
+  const saveDisabled = saving || !label || (!editingId && !connStr);
+
+  return (
+    <div className="tg-body">
+      {/* Service links */}
+      <div style={{ marginBottom: 12 }}>
+        <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.db_conn_where_label} </span>
+        {DB_SERVICES.map((s, i) => (
+          <span key={s.name}>
+            <a href={s.url} target="_blank" rel="noreferrer" style={{ fontSize: 13 }}>{s.name}</a>
+            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}> ({s.note})</span>
+            {i < DB_SERVICES.length - 1 && <span style={{ color: 'var(--text-secondary)' }}> · </span>}
+          </span>
+        ))}
+      </div>
+
+      {/* List */}
+      {connections.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+          {connections.map(c => (
+            <div key={c.id} className="tg-connected-info" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ fontWeight: 600 }}>{c.label}</div>
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                <button className="btn btn-secondary" onClick={() => openEdit(c)}>{t.edit_btn}</button>
+                <button className="btn btn-danger" onClick={() => handleRemove(c.id)}>{t.delete_btn}</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {connections.length === 0 && !showForm && (
+        <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 12 }}>{t.no_db_connections}</p>
+      )}
+
+      {!showForm && (
+        <button className="btn btn-primary" onClick={openAdd}>{t.db_conn_add}</button>
+      )}
+
+      {showForm && (
+        <div className="tg-connect-flow" style={{ marginTop: 12 }}>
+          <div className="form-group">
+            <label>{t.db_conn_name}</label>
+            <input className="input" placeholder={t.db_conn_name_ph} value={label} onChange={e => setLabel(e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label>
+              {t.db_conn_string}{' '}
+              {editingId && <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{t.db_conn_string_keep}</span>}
+            </label>
+            <input
+              className="input"
+              type="password"
+              placeholder={t.db_conn_string_ph}
+              value={connStr}
+              onChange={e => setConnStr(e.target.value)}
+            />
+            <div className="smtp-hint smtp-hint--generic">
+              <span className="smtp-hint-icon">💡</span>
+              <span>Формат: <code>postgresql://user:pass@host:5432/dbname</code></span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-primary" onClick={handleSave} disabled={saveDisabled}>
+              {saving ? t.saving : editingId ? t.save_changes : t.add_btn}
+            </button>
+            <button className="btn btn-secondary" onClick={cancelForm}>{t.cancel}</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function SettingsPage() {
   const { t } = useLangStore();
   const { user, loadProfile } = useAuthStore();
@@ -617,6 +740,18 @@ export function SettingsPage() {
           </div>
         </div>
         <EmailAccountsManager />
+      </div>
+
+      {/* DB connections section */}
+      <div className="settings-section card">
+        <div className="settings-section-header">
+          <div className="settings-section-icon">🗄️</div>
+          <div>
+            <h3>{t.db_connections_title}</h3>
+            <p className="settings-desc">{t.db_connections_desc}</p>
+          </div>
+        </div>
+        <DbConnectionsManager />
       </div>
     </div>
   );

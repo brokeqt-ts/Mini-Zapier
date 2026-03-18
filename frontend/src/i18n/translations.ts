@@ -392,6 +392,24 @@ export const translations = {
     provider_resend_note: 'Resend используется только для отправки писем (узел «Отправить Email»). Для триггера «Новое письмо» добавьте отдельный IMAP-аккаунт.',
     provider_imap_note: 'Этот аккаунт используется только для чтения входящих писем (триггер «Новое письмо»). Для отправки используйте Resend.',
 
+    // SettingsPage — DB connections
+    db_connections_title: 'Подключения к базам данных',
+    db_connections_desc: 'Сохраните строки подключения PostgreSQL и используйте их в узле «Запрос к БД».',
+    db_conn_name: 'Название',
+    db_conn_name_ph: 'Railway БД, Аналитика...',
+    db_conn_string: 'Строка подключения',
+    db_conn_string_ph: 'postgresql://user:pass@host:5432/dbname',
+    db_conn_string_keep: '(оставьте пустым, чтобы не менять)',
+    db_conn_add: '+ Добавить подключение',
+    db_conn_added: 'Подключение добавлено',
+    db_conn_updated: 'Подключение обновлено',
+    db_conn_deleted: 'Подключение удалено',
+    db_conn_delete_confirm: 'Удалить подключение к БД?',
+    db_conn_where_label: 'Где создать базу данных:',
+    no_db_connections: 'Нет сохранённых подключений.',
+    db_conn_select: 'Использовать сохранённое подключение',
+    db_conn_none: '— Ввести строку вручную —',
+
     // Field suggestion labels
     fs_body_whole: 'Тело целиком (объект)',
     fs_headers_all: 'Заголовки целиком (объект)',
@@ -803,6 +821,24 @@ export const translations = {
     provider_receive_only: 'receive only',
     provider_resend_note: 'Resend is used only for sending emails (the "Send Email" node). To receive emails, add a separate IMAP account.',
     provider_imap_note: 'This account is used only for reading incoming emails (the "New Email" trigger). To send emails, use Resend.',
+
+    // SettingsPage — DB connections
+    db_connections_title: 'Database connections',
+    db_connections_desc: 'Save PostgreSQL connection strings and use them in the "DB Query" node.',
+    db_conn_name: 'Name',
+    db_conn_name_ph: 'Railway DB, Analytics...',
+    db_conn_string: 'Connection string',
+    db_conn_string_ph: 'postgresql://user:pass@host:5432/dbname',
+    db_conn_string_keep: '(leave empty to keep unchanged)',
+    db_conn_add: '+ Add connection',
+    db_conn_added: 'Connection added',
+    db_conn_updated: 'Connection updated',
+    db_conn_deleted: 'Connection deleted',
+    db_conn_delete_confirm: 'Delete database connection?',
+    db_conn_where_label: 'Where to create a database:',
+    no_db_connections: 'No saved connections.',
+    db_conn_select: 'Use saved connection',
+    db_conn_none: '— Enter string manually —',
 
     // Field suggestion labels
     fs_body_whole: 'Whole body (object)',

@@ -3,6 +3,7 @@ import { useWorkflowEditorStore } from '../../../store/workflow-editor.store';
 import { useLangStore } from '../../../store/language.store';
 import { useAuthStore } from '../../../store/auth.store';
 import { useEmailAccountsStore } from '../../../store/email-accounts.store';
+import { useDbConnectionsStore } from '../../../store/db-connections.store';
 import { T } from '../../../i18n/translations';
 
 function getTimezones(t: T) {
@@ -100,6 +101,7 @@ export function NodeConfigPanel() {
   const { t } = useLangStore();
   const user = useAuthStore((s) => s.user);
   const { accounts, loaded, load } = useEmailAccountsStore();
+  const { connections: dbConnections, loaded: dbLoaded, load: dbLoad } = useDbConnectionsStore();
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const TIMEZONES = getTimezones(t);
@@ -108,6 +110,10 @@ export function NodeConfigPanel() {
   useEffect(() => {
     if (!loaded) load();
   }, [loaded, load]);
+
+  useEffect(() => {
+    if (!dbLoaded) dbLoad();
+  }, [dbLoaded, dbLoad]);
 
   const node = nodes.find((n) => n.id === selectedNodeId);
   if (!node) return null;
@@ -452,21 +458,41 @@ export function NodeConfigPanel() {
         {nodeType === 'ACTION_DB_QUERY' && (
           <>
             <div className="form-group">
-              <label>{t.field_connectionString}</label>
-              <input
+              <label>{t.db_conn_select}</label>
+              <select
                 className="input"
-                type="password"
-                value={val('connectionString')}
-                onChange={(e) => set('connectionString', e.target.value)}
-                placeholder="postgresql://user:pass@host:5432/dbname"
-              />
-              {!val('connectionString') && (
+                value={(config.dbConnectionId as string) || ''}
+                onChange={e => updateNodeConfig(node.id, { ...config, dbConnectionId: e.target.value, connectionString: e.target.value ? '' : config.connectionString })}
+              >
+                <option value="">{t.db_conn_none}</option>
+                {dbConnections.map(c => (
+                  <option key={c.id} value={c.id}>{c.label}</option>
+                ))}
+              </select>
+              {dbConnections.length === 0 && (
                 <div className="field-hint">
-                  {t.no_conn_hint}
-                  {' '}{t.format_label} <code>postgresql://user:pass@host:5432/db</code>
+                  💡 <a href="/settings" target="_blank" rel="noreferrer">{t.settings_link}</a> → {t.db_connections_title}
                 </div>
               )}
             </div>
+            {!config.dbConnectionId && (
+              <div className="form-group">
+                <label>{t.field_connectionString}</label>
+                <input
+                  className="input"
+                  type="password"
+                  value={val('connectionString')}
+                  onChange={(e) => set('connectionString', e.target.value)}
+                  placeholder="postgresql://user:pass@host:5432/dbname"
+                />
+                {!val('connectionString') && (
+                  <div className="field-hint">
+                    {t.no_conn_hint}
+                    {' '}{t.format_label} <code>postgresql://user:pass@host:5432/db</code>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="form-group">
               <label>{t.query_mode}</label>
               <select

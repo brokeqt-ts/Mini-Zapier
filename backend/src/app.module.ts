@@ -12,6 +12,7 @@ import { ActionsModule } from './actions/actions.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { EmailAccountsModule } from './email-accounts/email-accounts.module';
+import { DbConnectionsModule } from './db-connections/db-connections.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { EmailAccountsModule } from './email-accounts/email-accounts.module';
     DashboardModule,
     TelegramModule,
     EmailAccountsModule,
+    DbConnectionsModule,
   ],
 })
 export class AppModule {}

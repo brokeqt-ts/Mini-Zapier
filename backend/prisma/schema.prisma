@@ -22,8 +22,21 @@ model User {
 
   workflows        Workflow[]
   emailAccounts    EmailAccount[]
+  dbConnections    DbConnection[]
 
   @@map("users")
+}
+
+model DbConnection {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label            String
+  connectionString String   @map("connection_string")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("db_connections")
 }
 
 model EmailAccount {
