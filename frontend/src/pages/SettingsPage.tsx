@@ -14,17 +14,29 @@ interface MailProvider {
   smtpPort: number;
   imapHost: string;
   imapPort: number;
+  railwayOk?: boolean; // works reliably from cloud/Railway
+  railwayWarn?: boolean; // known to block cloud IPs
 }
 
-const PROVIDERS: MailProvider[] = [
-  { name: 'Яндекс',         smtpHost: 'smtp.yandex.com', smtpPort: 465, imapHost: 'imap.yandex.ru',        imapPort: 993 },
-  { name: 'Gmail',           smtpHost: 'smtp.gmail.com',  smtpPort: 465, imapHost: 'imap.gmail.com',        imapPort: 993 },
-  { name: 'Mail.ru',         smtpHost: 'smtp.mail.ru',    smtpPort: 465, imapHost: 'imap.mail.ru',          imapPort: 993 },
-  { name: 'Outlook / Hotmail', smtpHost: 'smtp-mail.outlook.com', smtpPort: 587, imapHost: 'outlook.office365.com', imapPort: 993 },
-  { name: 'Yahoo Mail',      smtpHost: 'smtp.mail.yahoo.com', smtpPort: 465, imapHost: 'imap.mail.yahoo.com', imapPort: 993 },
-  { name: 'Rambler',         smtpHost: 'smtp.rambler.ru', smtpPort: 465, imapHost: 'imap.rambler.ru',       imapPort: 993 },
-  { name: 'iCloud',          smtpHost: 'smtp.mail.me.com', smtpPort: 587, imapHost: 'imap.mail.me.com',    imapPort: 993 },
+// Relay services — work from Railway and any cloud provider
+const PROVIDERS_RELAY: MailProvider[] = [
+  { name: 'Resend',   smtpHost: 'smtp.resend.com',      smtpPort: 465, imapHost: '', imapPort: 0, railwayOk: true },
+  { name: 'SendGrid', smtpHost: 'smtp.sendgrid.net',     smtpPort: 587, imapHost: '', imapPort: 0, railwayOk: true },
+  { name: 'Brevo',    smtpHost: 'smtp-relay.brevo.com',  smtpPort: 587, imapHost: '', imapPort: 0, railwayOk: true },
 ];
+
+// Standard mail providers — may be blocked from cloud IPs
+const PROVIDERS_STANDARD: MailProvider[] = [
+  { name: 'Gmail',           smtpHost: 'smtp.gmail.com',         smtpPort: 587, imapHost: 'imap.gmail.com',         imapPort: 993 },
+  { name: 'Outlook / Hotmail', smtpHost: 'smtp-mail.outlook.com', smtpPort: 587, imapHost: 'outlook.office365.com',  imapPort: 993 },
+  { name: 'Yahoo Mail',      smtpHost: 'smtp.mail.yahoo.com',    smtpPort: 465, imapHost: 'imap.mail.yahoo.com',    imapPort: 993 },
+  { name: 'iCloud',          smtpHost: 'smtp.mail.me.com',       smtpPort: 587, imapHost: 'imap.mail.me.com',       imapPort: 993 },
+  { name: 'Яндекс',          smtpHost: 'smtp.yandex.com',        smtpPort: 465, imapHost: 'imap.yandex.ru',         imapPort: 993, railwayWarn: true },
+  { name: 'Mail.ru',         smtpHost: 'smtp.mail.ru',           smtpPort: 465, imapHost: 'imap.mail.ru',           imapPort: 993, railwayWarn: true },
+  { name: 'Rambler',         smtpHost: 'smtp.rambler.ru',        smtpPort: 465, imapHost: 'imap.rambler.ru',        imapPort: 993, railwayWarn: true },
+];
+
+const PROVIDERS: MailProvider[] = [...PROVIDERS_RELAY, ...PROVIDERS_STANDARD];
 
 /** Maps known SMTP hosts → IMAP host. Falls back to smtp→imap prefix swap. */
 const SMTP_TO_IMAP: Record<string, string> = {
@@ -50,13 +62,16 @@ function guessImapHost(smtpHost: string): string {
 }
 
 const SMTP_HINTS_BASE: { match: string[]; name: string; hintKey: keyof T; url: string }[] = [
-  { match: ['yandex'],                      name: 'Яндекс',  hintKey: 'smtp_hint_yandex',  url: 'https://id.yandex.ru/security/app-passwords' },
-  { match: ['gmail', 'googlemail'],          name: 'Gmail',   hintKey: 'smtp_hint_gmail',   url: 'https://myaccount.google.com/apppasswords' },
-  { match: ['mail.ru'],                      name: 'Mail.ru', hintKey: 'smtp_hint_mailru',  url: 'https://account.mail.ru/user/2-step-auth/passwords/' },
-  { match: ['yahoo'],                        name: 'Yahoo',   hintKey: 'smtp_hint_yahoo',   url: 'https://login.yahoo.com/account/security' },
+  { match: ['resend.com'],                   name: 'Resend',   hintKey: 'smtp_hint_resend',   url: 'https://resend.com/api-keys' },
+  { match: ['sendgrid'],                     name: 'SendGrid', hintKey: 'smtp_hint_sendgrid', url: 'https://app.sendgrid.com/settings/api_keys' },
+  { match: ['brevo'],                        name: 'Brevo',    hintKey: 'smtp_hint_brevo',    url: 'https://app.brevo.com/settings/keys/smtp' },
+  { match: ['yandex'],                       name: 'Яндекс',   hintKey: 'smtp_hint_yandex',   url: 'https://id.yandex.ru/security/app-passwords' },
+  { match: ['gmail', 'googlemail'],          name: 'Gmail',    hintKey: 'smtp_hint_gmail',    url: 'https://myaccount.google.com/apppasswords' },
+  { match: ['mail.ru'],                      name: 'Mail.ru',  hintKey: 'smtp_hint_mailru',   url: 'https://account.mail.ru/user/2-step-auth/passwords/' },
+  { match: ['yahoo'],                        name: 'Yahoo',    hintKey: 'smtp_hint_yahoo',    url: 'https://login.yahoo.com/account/security' },
   { match: ['outlook','hotmail','office365','live.com'], name: 'Outlook', hintKey: 'smtp_hint_outlook', url: 'https://support.microsoft.com/office/pop-imap-and-smtp-settings-8361e398-8af4-4e97-b147-6c6c4ac95353' },
-  { match: ['rambler'],                      name: 'Rambler', hintKey: 'smtp_hint_rambler', url: 'https://help.rambler.ru/mail/1237/' },
-  { match: ['icloud', 'me.com', 'mac.com'], name: 'iCloud',  hintKey: 'smtp_hint_icloud',  url: 'https://appleid.apple.com/account/manage' },
+  { match: ['rambler'],                      name: 'Rambler',  hintKey: 'smtp_hint_rambler',  url: 'https://help.rambler.ru/mail/1237/' },
+  { match: ['icloud', 'me.com', 'mac.com'], name: 'iCloud',   hintKey: 'smtp_hint_icloud',   url: 'https://appleid.apple.com/account/manage' },
 ];
 
 const emptyForm = (): CreateEmailAccountDto & { smtpPortStr: string; imapPortStr: string } => ({
@@ -204,17 +219,40 @@ function EmailAccountsManager() {
                   smtpPortStr: String(p.smtpPort),
                   smtpPort: p.smtpPort,
                   imapHost: p.imapHost,
-                  imapPortStr: String(p.imapPort),
-                  imapPort: p.imapPort,
+                  imapPortStr: p.imapPort ? String(p.imapPort) : '',
+                  imapPort: p.imapPort || undefined,
                   label: f.label || p.name,
                 }));
               }}
             >
               <option value="">{t.provider_custom}</option>
-              {PROVIDERS.map(p => (
-                <option key={p.smtpHost} value={p.name}>{p.name}</option>
-              ))}
+              <optgroup label={`⚡ ${t.smtp_relay_badge}`}>
+                {PROVIDERS_RELAY.map(p => (
+                  <option key={p.smtpHost} value={p.name}>{p.name}</option>
+                ))}
+              </optgroup>
+              <optgroup label="— Standard —">
+                {PROVIDERS_STANDARD.map(p => (
+                  <option key={p.smtpHost} value={p.name}>{p.name}</option>
+                ))}
+              </optgroup>
             </select>
+            {(() => {
+              const sel = PROVIDERS.find(p => p.smtpHost === form.smtpHost);
+              if (sel?.railwayOk) return (
+                <div className="smtp-hint" style={{ marginTop: 6 }}>
+                  <span className="smtp-hint-icon">⚡</span>
+                  <span>{t.smtp_relay_badge}</span>
+                </div>
+              );
+              if (sel?.railwayWarn) return (
+                <div className="smtp-hint smtp-hint--generic" style={{ marginTop: 6 }}>
+                  <span className="smtp-hint-icon">⚠️</span>
+                  <span>{t.smtp_relay_warning}</span>
+                </div>
+              );
+              return null;
+            })()}
           </div>
           <div className="form-group">
             <label>{t.account_name}</label>

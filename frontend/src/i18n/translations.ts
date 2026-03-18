@@ -374,6 +374,11 @@ export const translations = {
     smtp_hint_outlook: 'Для Outlook используйте обычный пароль аккаунта Microsoft. Убедитесь, что SMTP включён в настройках.',
     smtp_hint_rambler: 'Rambler требует пароль приложения.',
     smtp_hint_icloud: 'iCloud требует пароль приложения.',
+    smtp_hint_resend: 'Логин всегда «resend». Пароль — ваш API-ключ с resend.com. Отправка только с верифицированного домена или адреса onboarding@resend.dev для тестов.',
+    smtp_hint_sendgrid: 'Логин всегда «apikey». Пароль — ваш API-ключ с sendgrid.com. Требуется верификация отправителя.',
+    smtp_hint_brevo: 'Логин — ваш email на Brevo. Пароль — SMTP-ключ из раздела SMTP & API → SMTP (не пароль от аккаунта).',
+    smtp_relay_badge: '⚡ Работает на Railway',
+    smtp_relay_warning: '⚠️ Может не работать на Railway — российские провайдеры блокируют облачные серверы',
     app_password_hint_generic: 'Если провайдер поддерживает двухфакторную аутентификацию, используйте пароль приложения вместо основного пароля.',
 
     // Field suggestion labels
@@ -770,6 +775,11 @@ export const translations = {
     smtp_hint_outlook: 'For Outlook, use your regular Microsoft account password. Make sure SMTP is enabled in settings.',
     smtp_hint_rambler: 'Rambler requires an app password.',
     smtp_hint_icloud: 'iCloud requires an app password.',
+    smtp_hint_resend: 'Login is always "resend". Password is your API key from resend.com. Send only from a verified domain or onboarding@resend.dev for testing.',
+    smtp_hint_sendgrid: 'Login is always "apikey". Password is your API key from sendgrid.com. Sender verification required.',
+    smtp_hint_brevo: 'Login is your Brevo email. Password is the SMTP key from SMTP & API → SMTP section (not your account password).',
+    smtp_relay_badge: '⚡ Works on Railway',
+    smtp_relay_warning: '⚠️ May not work on Railway — Russian providers block cloud servers',
     app_password_hint_generic: 'If your provider supports two-factor authentication, use an app password instead of your main password.',
 
     // Field suggestion labels
