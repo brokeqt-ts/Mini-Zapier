@@ -380,6 +380,13 @@ export const translations = {
     smtp_relay_badge: '⚡ Работает на Railway',
     smtp_relay_warning: '⚠️ Может не работать на Railway — российские провайдеры блокируют облачные серверы',
     app_password_hint_generic: 'Если провайдер поддерживает двухфакторную аутентификацию, используйте пароль приложения вместо основного пароля.',
+    resend_from_label: 'Адрес отправителя',
+    resend_from_ph: 'onboarding@resend.dev',
+    resend_api_key_label: 'API-ключ',
+    resend_api_key_ph: 're_...',
+    resend_api_hint: 'Ключ и верификация отправителя — на',
+    imap_password_label: 'Пароль приложения',
+    imap_auto_configured: 'IMAP настроен автоматически',
 
     // Field suggestion labels
     fs_body_whole: 'Тело целиком (объект)',
@@ -781,6 +788,13 @@ export const translations = {
     smtp_relay_badge: '⚡ Works on Railway',
     smtp_relay_warning: '⚠️ May not work on Railway — Russian providers block cloud servers',
     app_password_hint_generic: 'If your provider supports two-factor authentication, use an app password instead of your main password.',
+    resend_from_label: 'Sender address',
+    resend_from_ph: 'onboarding@resend.dev',
+    resend_api_key_label: 'API Key',
+    resend_api_key_ph: 're_...',
+    resend_api_hint: 'Get your API key and verify your sender address at',
+    imap_password_label: 'App password',
+    imap_auto_configured: 'IMAP configured automatically',
 
     // Field suggestion labels
     fs_body_whole: 'Whole body (object)',

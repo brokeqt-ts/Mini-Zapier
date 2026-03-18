@@ -10,63 +10,36 @@ import './SettingsPage.css';
 
 interface MailProvider {
   name: string;
+  type: 'resend' | 'imap';
   smtpHost: string;
   smtpPort: number;
   imapHost: string;
   imapPort: number;
 }
 
-const PROVIDERS_RELAY: MailProvider[] = [
-  { name: 'Resend',   smtpHost: 'smtp.resend.com',      smtpPort: 465, imapHost: '', imapPort: 0 },
-  { name: 'SendGrid', smtpHost: 'smtp.sendgrid.net',     smtpPort: 587, imapHost: '', imapPort: 0 },
-  { name: 'Brevo',    smtpHost: 'smtp-relay.brevo.com',  smtpPort: 587, imapHost: '', imapPort: 0 },
-  { name: 'Gmail',           smtpHost: 'smtp.gmail.com',         smtpPort: 587, imapHost: 'imap.gmail.com',        imapPort: 993 },
-  { name: 'Outlook / Hotmail', smtpHost: 'smtp-mail.outlook.com', smtpPort: 587, imapHost: 'outlook.office365.com', imapPort: 993 },
+const PROVIDERS: MailProvider[] = [
+  { name: 'Resend',              type: 'resend', smtpHost: 'smtp.resend.com', smtpPort: 465, imapHost: '',                     imapPort: 0   },
+  { name: 'Gmail',               type: 'imap',   smtpHost: '',               smtpPort: 0,   imapHost: 'imap.gmail.com',        imapPort: 993 },
+  { name: 'Outlook / Hotmail',   type: 'imap',   smtpHost: '',               smtpPort: 0,   imapHost: 'outlook.office365.com', imapPort: 993 },
+  { name: 'Яндекс',              type: 'imap',   smtpHost: '',               smtpPort: 0,   imapHost: 'imap.yandex.ru',        imapPort: 993 },
+  { name: 'Mail.ru',             type: 'imap',   smtpHost: '',               smtpPort: 0,   imapHost: 'imap.mail.ru',          imapPort: 993 },
+  { name: 'Rambler',             type: 'imap',   smtpHost: '',               smtpPort: 0,   imapHost: 'imap.rambler.ru',       imapPort: 993 },
 ];
 
-const PROVIDERS: MailProvider[] = PROVIDERS_RELAY;
-
-/** Maps known SMTP hosts → IMAP host. Falls back to smtp→imap prefix swap. */
-const SMTP_TO_IMAP: Record<string, string> = {
-  'smtp.yandex.com':      'imap.yandex.ru',
-  'smtp.yandex.ru':       'imap.yandex.ru',
-  'smtp.gmail.com':       'imap.gmail.com',
-  'smtp.mail.ru':         'imap.mail.ru',
-  'smtp.rambler.ru':      'imap.rambler.ru',
-  'smtp.mail.yahoo.com':  'imap.mail.yahoo.com',
-  'smtp.mail.me.com':     'imap.mail.me.com',
-  'smtp-mail.outlook.com':'outlook.office365.com',
-  'smtp.office365.com':   'outlook.office365.com',
-  'smtp.live.com':        'outlook.office365.com',
-  'smtp.hotmail.com':     'outlook.office365.com',
+const IMAP_HINTS: Record<string, { hintKey: keyof T; url: string }> = {
+  'Яндекс':            { hintKey: 'smtp_hint_yandex',  url: 'https://id.yandex.ru/security/app-passwords' },
+  'Gmail':             { hintKey: 'smtp_hint_gmail',    url: 'https://myaccount.google.com/apppasswords' },
+  'Mail.ru':           { hintKey: 'smtp_hint_mailru',   url: 'https://account.mail.ru/user/2-step-auth/passwords/' },
+  'Rambler':           { hintKey: 'smtp_hint_rambler',  url: 'https://help.rambler.ru/mail/1237/' },
+  'Outlook / Hotmail': { hintKey: 'smtp_hint_outlook',  url: 'https://support.microsoft.com/office/pop-imap-and-smtp-settings-8361e398-8af4-4e97-b147-6c6c4ac95353' },
 };
 
-function guessImapHost(smtpHost: string): string {
-  const h = smtpHost.trim().toLowerCase();
-  if (SMTP_TO_IMAP[h]) return SMTP_TO_IMAP[h];
-  // Generic fallback: replace leading "smtp." with "imap."
-  if (h.startsWith('smtp.')) return 'imap.' + h.slice(5);
-  return '';
-}
-
-const SMTP_HINTS_BASE: { match: string[]; name: string; hintKey: keyof T; url: string }[] = [
-  { match: ['resend.com'],                   name: 'Resend',   hintKey: 'smtp_hint_resend',   url: 'https://resend.com/api-keys' },
-  { match: ['sendgrid'],                     name: 'SendGrid', hintKey: 'smtp_hint_sendgrid', url: 'https://app.sendgrid.com/settings/api_keys' },
-  { match: ['brevo'],                        name: 'Brevo',    hintKey: 'smtp_hint_brevo',    url: 'https://app.brevo.com/settings/keys/smtp' },
-  { match: ['yandex'],                       name: 'Яндекс',   hintKey: 'smtp_hint_yandex',   url: 'https://id.yandex.ru/security/app-passwords' },
-  { match: ['gmail', 'googlemail'],          name: 'Gmail',    hintKey: 'smtp_hint_gmail',    url: 'https://myaccount.google.com/apppasswords' },
-  { match: ['mail.ru'],                      name: 'Mail.ru',  hintKey: 'smtp_hint_mailru',   url: 'https://account.mail.ru/user/2-step-auth/passwords/' },
-  { match: ['yahoo'],                        name: 'Yahoo',    hintKey: 'smtp_hint_yahoo',    url: 'https://login.yahoo.com/account/security' },
-  { match: ['outlook','hotmail','office365','live.com'], name: 'Outlook', hintKey: 'smtp_hint_outlook', url: 'https://support.microsoft.com/office/pop-imap-and-smtp-settings-8361e398-8af4-4e97-b147-6c6c4ac95353' },
-  { match: ['rambler'],                      name: 'Rambler',  hintKey: 'smtp_hint_rambler',  url: 'https://help.rambler.ru/mail/1237/' },
-  { match: ['icloud', 'me.com', 'mac.com'], name: 'iCloud',   hintKey: 'smtp_hint_icloud',   url: 'https://appleid.apple.com/account/manage' },
-];
-
-const emptyForm = (): CreateEmailAccountDto & { smtpPortStr: string; imapPortStr: string } => ({
+const emptyForm = (): CreateEmailAccountDto & { smtpPortStr: string; imapPortStr: string; selectedProviderName: string } => ({
   label: '',
+  selectedProviderName: '',
   smtpHost: '',
-  smtpPortStr: '465',
-  smtpPort: 465,
+  smtpPortStr: '0',
+  smtpPort: 0,
   smtpUser: '',
   smtpPass: '',
   imapHost: '',
@@ -86,10 +59,10 @@ function EmailAccountsManager() {
     if (!loaded) load();
   }, [loaded, load]);
 
-  const smtpHintBase = SMTP_HINTS_BASE.find(p =>
-    p.match.some(m => form.smtpHost.toLowerCase().includes(m)),
-  );
-  const smtpHint = smtpHintBase ? { ...smtpHintBase, hint: t[smtpHintBase.hintKey] as string } : null;
+  const selectedProvider = PROVIDERS.find(p => p.name === form.selectedProviderName) ?? null;
+  const providerType: 'resend' | 'imap' | null =
+    selectedProvider?.type ??
+    (form.smtpHost === 'smtp.resend.com' ? 'resend' : form.imapHost && !form.smtpHost ? 'imap' : null);
 
   const openAdd = () => {
     setEditingId(null);
@@ -99,11 +72,18 @@ function EmailAccountsManager() {
 
   const openEdit = (account: EmailAccount) => {
     setEditingId(account.id);
+    let selectedProviderName = '';
+    if (account.smtpHost === 'smtp.resend.com') {
+      selectedProviderName = 'Resend';
+    } else if (!account.smtpHost && account.imapHost) {
+      selectedProviderName = PROVIDERS.find(p => p.imapHost === account.imapHost)?.name ?? '';
+    }
     setForm({
       label: account.label,
+      selectedProviderName,
       smtpHost: account.smtpHost,
-      smtpPortStr: String(account.smtpPort),
-      smtpPort: account.smtpPort,
+      smtpPortStr: String(account.smtpPort ?? 0),
+      smtpPort: account.smtpPort ?? 0,
       smtpUser: account.smtpUser,
       smtpPass: '',
       imapHost: account.imapHost || '',
@@ -122,15 +102,39 @@ function EmailAccountsManager() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const dto: CreateEmailAccountDto = {
-        label: form.label,
-        smtpHost: form.smtpHost,
-        smtpPort: Number(form.smtpPortStr) || 465,
-        smtpUser: form.smtpUser,
-        smtpPass: form.smtpPass,
-        imapHost: form.imapHost || undefined,
-        imapPort: form.imapHost && form.imapPortStr ? Number(form.imapPortStr) || undefined : undefined,
-      };
+      let dto: CreateEmailAccountDto;
+      if (providerType === 'resend') {
+        dto = {
+          label: form.label,
+          smtpHost: 'smtp.resend.com',
+          smtpPort: 465,
+          smtpUser: form.smtpUser,
+          smtpPass: form.smtpPass,
+          imapHost: undefined,
+          imapPort: undefined,
+        };
+      } else if (providerType === 'imap' && selectedProvider) {
+        dto = {
+          label: form.label,
+          smtpHost: '',
+          smtpPort: 0,
+          smtpUser: form.smtpUser,
+          smtpPass: form.smtpPass,
+          imapHost: selectedProvider.imapHost,
+          imapPort: selectedProvider.imapPort,
+        };
+      } else {
+        // legacy custom / no provider selected
+        dto = {
+          label: form.label,
+          smtpHost: form.smtpHost,
+          smtpPort: Number(form.smtpPortStr) || 0,
+          smtpUser: form.smtpUser,
+          smtpPass: form.smtpPass,
+          imapHost: form.imapHost || undefined,
+          imapPort: form.imapHost && form.imapPortStr ? Number(form.imapPortStr) || undefined : undefined,
+        };
+      }
 
       if (editingId) {
         const updateDto: Partial<CreateEmailAccountDto> = { ...dto };
@@ -159,27 +163,38 @@ function EmailAccountsManager() {
     }
   };
 
+  const imapHint = form.selectedProviderName ? IMAP_HINTS[form.selectedProviderName] ?? null : null;
+
+  const isSaveDisabled = saving || !form.label || !form.smtpUser || (!editingId && !form.smtpPass);
+
   return (
     <div className="tg-body">
       {accounts.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-          {accounts.map(account => (
-            <div key={account.id} className="tg-connected-info" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-              <div>
-                <div style={{ fontWeight: 600 }}>{account.label}</div>
-                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                  <code>{account.smtpUser}</code> — {account.smtpHost}:{account.smtpPort}
-                  {account.imapHost && (
-                    <> &nbsp;·&nbsp; IMAP: {account.imapHost}:{account.imapPort ?? 993}</>
-                  )}
+          {accounts.map(account => {
+            const isResend = account.smtpHost === 'smtp.resend.com';
+            const isImap = !account.smtpHost && !!account.imapHost;
+            return (
+              <div key={account.id} className="tg-connected-info" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                <div>
+                  <div style={{ fontWeight: 600 }}>{account.label}</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                    {isResend ? (
+                      <><code>{account.smtpUser}</code> · Resend API</>
+                    ) : isImap ? (
+                      <><code>{account.smtpUser}</code> · IMAP: {account.imapHost}:{account.imapPort ?? 993}</>
+                    ) : (
+                      <><code>{account.smtpUser}</code> · {account.smtpHost}:{account.smtpPort}</>
+                    )}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                  <button className="btn btn-secondary" onClick={() => openEdit(account)}>{t.edit_btn}</button>
+                  <button className="btn btn-danger" onClick={() => handleRemove(account.id)}>{t.delete_btn}</button>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                <button className="btn btn-secondary" onClick={() => openEdit(account)}>{t.edit_btn}</button>
-                <button className="btn btn-danger" onClick={() => handleRemove(account.id)}>{t.delete_btn}</button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -193,32 +208,39 @@ function EmailAccountsManager() {
 
       {showForm && (
         <div className="tg-connect-flow" style={{ marginTop: 12 }}>
+          {/* Provider selector */}
           <div className="form-group">
             <label>{t.provider_select}</label>
             <select
               className="input"
-              value={PROVIDERS.find(p => p.smtpHost === form.smtpHost)?.name ?? ''}
+              value={form.selectedProviderName}
               onChange={e => {
                 const p = PROVIDERS.find(pr => pr.name === e.target.value);
-                if (!p) return;
+                if (!p) {
+                  setForm(f => ({ ...f, selectedProviderName: '' }));
+                  return;
+                }
                 setForm(f => ({
                   ...f,
+                  selectedProviderName: p.name,
                   smtpHost: p.smtpHost,
-                  smtpPortStr: String(p.smtpPort),
                   smtpPort: p.smtpPort,
+                  smtpPortStr: String(p.smtpPort),
                   imapHost: p.imapHost,
-                  imapPortStr: p.imapPort ? String(p.imapPort) : '',
                   imapPort: p.imapPort || undefined,
+                  imapPortStr: p.imapPort ? String(p.imapPort) : '993',
                   label: f.label || p.name,
                 }));
               }}
             >
               <option value="">{t.provider_custom}</option>
               {PROVIDERS.map(p => (
-                <option key={p.smtpHost} value={p.name}>{p.name}</option>
+                <option key={p.name} value={p.name}>{p.name}</option>
               ))}
             </select>
           </div>
+
+          {/* Account label */}
           <div className="form-group">
             <label>{t.account_name}</label>
             <input
@@ -228,105 +250,174 @@ function EmailAccountsManager() {
               onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
             />
           </div>
-          <div className="form-group">
-            <label>{t.smtp_server}</label>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                className="input"
-                style={{ flex: 1 }}
-                placeholder="smtp.yandex.com"
-                value={form.smtpHost}
-                onChange={e => {
-                  const smtpHost = e.target.value;
-                  setForm(f => {
-                    const autoImap = guessImapHost(f.imapHost || '') === f.imapHost || !f.imapHost;
-                    return {
-                      ...f,
-                      smtpHost,
-                      imapHost: autoImap ? guessImapHost(smtpHost) : f.imapHost,
-                    };
-                  });
-                }}
-              />
-              <input
-                className="input"
-                style={{ width: 80 }}
-                placeholder="465"
-                value={form.smtpPortStr}
-                onChange={e => setForm(f => ({ ...f, smtpPortStr: e.target.value }))}
-              />
-            </div>
-          </div>
-          <div className="form-group">
-            <label>{t.smtp_login}</label>
-            <input
-              className="input"
-              placeholder="user@yandex.ru"
-              value={form.smtpUser}
-              onChange={e => setForm(f => ({ ...f, smtpUser: e.target.value }))}
-            />
-          </div>
-          <div className="form-group">
-            <label>
-              {t.smtp_password}{' '}
-              {editingId && (
-                <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{t.smtp_password_keep}</span>
-              )}
-            </label>
-            <input
-              className="input"
-              type="password"
-              placeholder="••••••••"
-              value={form.smtpPass}
-              onChange={e => setForm(f => ({ ...f, smtpPass: e.target.value }))}
-            />
-            {smtpHint ? (
-              <div className="smtp-hint">
-                <span className="smtp-hint-icon">🔑</span>
-                <span>
-                  {smtpHint.hint}{' '}
-                  <a href={smtpHint.url} target="_blank" rel="noreferrer">
-                    {t.create_app_password}
-                  </a>
-                </span>
+
+          {/* ── Resend form ── */}
+          {providerType === 'resend' && (
+            <>
+              <div className="form-group">
+                <label>{t.resend_from_label}</label>
+                <input
+                  className="input"
+                  placeholder={t.resend_from_ph}
+                  value={form.smtpUser}
+                  onChange={e => setForm(f => ({ ...f, smtpUser: e.target.value }))}
+                />
               </div>
-            ) : form.smtpHost ? (
-              <div className="smtp-hint smtp-hint--generic">
-                <span className="smtp-hint-icon">💡</span>
-                <span>{t.app_password_hint}</span>
+              <div className="form-group">
+                <label>
+                  {t.resend_api_key_label}{' '}
+                  {editingId && (
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{t.smtp_password_keep}</span>
+                  )}
+                </label>
+                <input
+                  className="input"
+                  type="password"
+                  placeholder={t.resend_api_key_ph}
+                  value={form.smtpPass}
+                  onChange={e => setForm(f => ({ ...f, smtpPass: e.target.value }))}
+                />
+                <div className="smtp-hint">
+                  <span className="smtp-hint-icon">🔑</span>
+                  <span>
+                    {t.resend_api_hint}{' '}
+                    <a href="https://resend.com/api-keys" target="_blank" rel="noreferrer">
+                      resend.com/api-keys
+                    </a>
+                  </span>
+                </div>
               </div>
-            ) : null}
-          </div>
-          <div className="form-group">
-            <label>
-              {t.imap_server}{' '}
-              <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{t.imap_trigger_hint}</span>
-              {form.imapHost && form.imapHost === guessImapHost(form.smtpHost) && (
-                <span style={{ fontSize: 11, color: 'var(--primary)', marginLeft: 6 }}>{t.imap_auto_filled}</span>
+            </>
+          )}
+
+          {/* ── IMAP provider form ── */}
+          {providerType === 'imap' && (
+            <>
+              <div className="form-group">
+                <label>{t.smtp_login}</label>
+                <input
+                  className="input"
+                  placeholder="user@gmail.com"
+                  value={form.smtpUser}
+                  onChange={e => setForm(f => ({ ...f, smtpUser: e.target.value }))}
+                />
+              </div>
+              <div className="form-group">
+                <label>
+                  {t.imap_password_label}{' '}
+                  {editingId && (
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{t.smtp_password_keep}</span>
+                  )}
+                </label>
+                <input
+                  className="input"
+                  type="password"
+                  placeholder="••••••••"
+                  value={form.smtpPass}
+                  onChange={e => setForm(f => ({ ...f, smtpPass: e.target.value }))}
+                />
+                {imapHint ? (
+                  <div className="smtp-hint">
+                    <span className="smtp-hint-icon">🔑</span>
+                    <span>
+                      {t[imapHint.hintKey] as string}{' '}
+                      <a href={imapHint.url} target="_blank" rel="noreferrer">
+                        {t.create_app_password}
+                      </a>
+                    </span>
+                  </div>
+                ) : (
+                  <div className="smtp-hint smtp-hint--generic">
+                    <span className="smtp-hint-icon">💡</span>
+                    <span>{t.app_password_hint}</span>
+                  </div>
+                )}
+              </div>
+              {selectedProvider && (
+                <div className="smtp-hint smtp-hint--generic" style={{ marginTop: 0 }}>
+                  <span className="smtp-hint-icon">✓</span>
+                  <span>{t.imap_auto_configured}: {selectedProvider.imapHost}:{selectedProvider.imapPort}</span>
+                </div>
               )}
-            </label>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                className="input"
-                style={{ flex: 1 }}
-                placeholder="imap.yandex.ru"
-                value={form.imapHost}
-                onChange={e => setForm(f => ({ ...f, imapHost: e.target.value }))}
-              />
-              <input
-                className="input"
-                style={{ width: 80 }}
-                placeholder="993"
-                value={form.imapPortStr}
-                onChange={e => setForm(f => ({ ...f, imapPortStr: e.target.value }))}
-              />
-            </div>
-          </div>
+            </>
+          )}
+
+          {/* ── Custom / legacy form ── */}
+          {providerType === null && (
+            <>
+              <div className="form-group">
+                <label>{t.smtp_login}</label>
+                <input
+                  className="input"
+                  placeholder="user@example.com"
+                  value={form.smtpUser}
+                  onChange={e => setForm(f => ({ ...f, smtpUser: e.target.value }))}
+                />
+              </div>
+              <div className="form-group">
+                <label>
+                  {t.smtp_password}{' '}
+                  {editingId && (
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{t.smtp_password_keep}</span>
+                  )}
+                </label>
+                <input
+                  className="input"
+                  type="password"
+                  placeholder="••••••••"
+                  value={form.smtpPass}
+                  onChange={e => setForm(f => ({ ...f, smtpPass: e.target.value }))}
+                />
+              </div>
+              <div className="form-group">
+                <label>{t.smtp_server}</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    className="input"
+                    style={{ flex: 1 }}
+                    placeholder="smtp.example.com"
+                    value={form.smtpHost}
+                    onChange={e => setForm(f => ({ ...f, smtpHost: e.target.value }))}
+                  />
+                  <input
+                    className="input"
+                    style={{ width: 80 }}
+                    placeholder="465"
+                    value={form.smtpPortStr}
+                    onChange={e => setForm(f => ({ ...f, smtpPortStr: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label>
+                  {t.imap_server}{' '}
+                  <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{t.imap_trigger_hint}</span>
+                </label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    className="input"
+                    style={{ flex: 1 }}
+                    placeholder="imap.example.com"
+                    value={form.imapHost}
+                    onChange={e => setForm(f => ({ ...f, imapHost: e.target.value }))}
+                  />
+                  <input
+                    className="input"
+                    style={{ width: 80 }}
+                    placeholder="993"
+                    value={form.imapPortStr}
+                    onChange={e => setForm(f => ({ ...f, imapPortStr: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               className="btn btn-primary"
               onClick={handleSave}
-              disabled={saving || !form.label || !form.smtpHost || !form.smtpUser || (!editingId && !form.smtpPass)}
+              disabled={isSaveDisabled}
             >
               {saving ? t.saving : editingId ? t.save_changes : t.add_btn}
             </button>
