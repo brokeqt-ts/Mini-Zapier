@@ -10,7 +10,7 @@ interface EmailAccountsState {
   remove: (id: string) => Promise<void>;
 }
 
-export const useEmailAccountsStore = create<EmailAccountsState>((set, get) => ({
+export const useEmailAccountsStore = create<EmailAccountsState>((set) => ({
   accounts: [],
   loaded: false,
 
