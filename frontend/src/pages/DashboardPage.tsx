@@ -85,30 +85,30 @@ export function DashboardPage() {
     <div className="dashboard">
       <h2>{t.dashboard}</h2>
 
+      {stats && (
+        <div className="stats-row">
+          <div className="stat-card card">
+            <div className="stat-value">{stats.totalWorkflows}</div>
+            <div className="stat-label">{t.total_workflows}</div>
+          </div>
+          <div className="stat-card card">
+            <div className="stat-value">{stats.activeWorkflows}</div>
+            <div className="stat-label">{t.active_count}</div>
+          </div>
+          <div className="stat-card card">
+            <div className="stat-value">{stats.totalExecutions}</div>
+            <div className="stat-label">{t.total_executions}</div>
+          </div>
+          <div className="stat-card card">
+            <div className="stat-value">{stats.successRate}%</div>
+            <div className="stat-label">{t.success_rate}</div>
+          </div>
+        </div>
+      )}
+
       <div className="dashboard-layout">
         {/* ── Left column ── */}
         <div className="dashboard-main">
-          {stats && (
-            <div className="stats-row">
-              <div className="stat-card card">
-                <div className="stat-value">{stats.totalWorkflows}</div>
-                <div className="stat-label">{t.total_workflows}</div>
-              </div>
-              <div className="stat-card card">
-                <div className="stat-value">{stats.activeWorkflows}</div>
-                <div className="stat-label">{t.active_count}</div>
-              </div>
-              <div className="stat-card card">
-                <div className="stat-value">{stats.totalExecutions}</div>
-                <div className="stat-label">{t.total_executions}</div>
-              </div>
-              <div className="stat-card card">
-                <div className="stat-value">{stats.successRate}%</div>
-                <div className="stat-label">{t.success_rate}</div>
-              </div>
-            </div>
-          )}
-
           <div className="section">
             <h3>{t.workflows_section}</h3>
             <div className="create-row">
