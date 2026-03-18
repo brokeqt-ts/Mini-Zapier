@@ -44,7 +44,9 @@ export class EmailExecutor implements ActionExecutor {
 
     const to      = this.interpolate(config.to as string, context);
     const subject = this.interpolate(config.subject as string, context);
-    const body    = this.interpolate(config.bodyTemplate as string, context);
+    const body    = this.interpolate(config.bodyTemplate as string, context)
+      .replace(/\r\n/g, '\n')
+      .replace(/\n/g, '<br>\n');
 
     // --- HTTP API providers (bypass SMTP port restrictions) ---
     if (smtpHost === 'smtp.resend.com') {
