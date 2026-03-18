@@ -287,7 +287,7 @@ function EmailAccountsManager() {
                 </label>
                 <input
                   className="input"
-                  type="password"
+                  type="password" autoComplete="new-password"
                   placeholder={t.resend_api_key_ph}
                   value={form.smtpPass}
                   onChange={e => setForm(f => ({ ...f, smtpPass: e.target.value }))}
@@ -326,7 +326,7 @@ function EmailAccountsManager() {
                 </label>
                 <input
                   className="input"
-                  type="password"
+                  type="password" autoComplete="new-password"
                   placeholder="••••••••"
                   value={form.smtpPass}
                   onChange={e => setForm(f => ({ ...f, smtpPass: e.target.value }))}
@@ -378,7 +378,7 @@ function EmailAccountsManager() {
                 </label>
                 <input
                   className="input"
-                  type="password"
+                  type="password" autoComplete="new-password"
                   placeholder="••••••••"
                   value={form.smtpPass}
                   onChange={e => setForm(f => ({ ...f, smtpPass: e.target.value }))}
@@ -544,7 +544,7 @@ function DbConnectionsManager() {
             </label>
             <input
               className="input"
-              type="password"
+              type="password" autoComplete="new-password"
               placeholder={t.db_conn_string_ph}
               value={connStr}
               onChange={e => setConnStr(e.target.value)}

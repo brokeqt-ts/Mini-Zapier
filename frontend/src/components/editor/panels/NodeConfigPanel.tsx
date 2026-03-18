@@ -274,7 +274,7 @@ export function NodeConfigPanel() {
             </div>
             <div className="form-group">
               <label>{t.smtp_password}</label>
-              <input className="input" type="password" placeholder="••••••••" value={val('smtpPass')} onChange={e => set('smtpPass', e.target.value)} />
+              <input className="input" type="password" autoComplete="new-password" placeholder="••••••••" value={val('smtpPass')} onChange={e => set('smtpPass', e.target.value)} />
             </div>
           </>
         )}
@@ -479,7 +479,7 @@ export function NodeConfigPanel() {
                 <label>{t.field_connectionString}</label>
                 <input
                   className="input"
-                  type="password"
+                  type="password" autoComplete="new-password"
                   value={val('connectionString')}
                   onChange={(e) => set('connectionString', e.target.value)}
                   placeholder="postgresql://user:pass@host:5432/dbname"
