@@ -50,15 +50,12 @@ export function WorkflowCanvas() {
       const data = event.dataTransfer.getData('application/reactflow');
       if (!data) return;
 
-      const { nodeType, label } = JSON.parse(data);
-      const bounds = (event.target as HTMLElement)
-        .closest('.react-flow')
-        ?.getBoundingClientRect();
-      if (!bounds || !reactFlowInstance.current) return;
+      const { nodeType, label, offsetX = 0, offsetY = 0 } = JSON.parse(data);
+      if (!reactFlowInstance.current) return;
 
       const position = reactFlowInstance.current.screenToFlowPosition({
-        x: event.clientX - bounds.left,
-        y: event.clientY - bounds.top,
+        x: event.clientX - offsetX,
+        y: event.clientY - offsetY,
       });
 
       const type = nodeType.startsWith('TRIGGER_') ? 'trigger' : 'action';

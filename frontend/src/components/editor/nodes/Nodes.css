@@ -69,6 +69,32 @@
   margin-bottom: 2px;
 }
 
+.node-label-editable {
+  cursor: text;
+  border-radius: 3px;
+  padding: 1px 3px;
+  margin: -1px -3px;
+  transition: background 0.12s;
+}
+
+.node-label-editable:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.node-label-input {
+  font-weight: 600;
+  font-size: 13px;
+  font-family: inherit;
+  border: 1px solid var(--primary);
+  border-radius: 3px;
+  padding: 1px 4px;
+  margin-bottom: 2px;
+  width: 100%;
+  outline: none;
+  background: white;
+  box-sizing: border-box;
+}
+
 .node-type {
   font-size: 11px;
   color: var(--text-secondary);

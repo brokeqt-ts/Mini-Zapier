@@ -1,4 +1,8 @@
-import 'dotenv/config';
+import { setDefaultResultOrder } from 'dns';
+setDefaultResultOrder('ipv4first');
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';

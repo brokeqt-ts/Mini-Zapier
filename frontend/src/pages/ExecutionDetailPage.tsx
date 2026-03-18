@@ -35,6 +35,12 @@ export function ExecutionDetailPage() {
     load();
   }, [id]);
 
+  useEffect(() => {
+    if (!execution || !['PENDING', 'RUNNING'].includes(execution.status)) return;
+    const interval = setInterval(load, 2000);
+    return () => clearInterval(interval);
+  }, [execution?.status]);
+
   const handleRetry = async () => {
     if (!id) return;
     try {

@@ -27,7 +27,11 @@ export class ExecutionService {
     await this.workflowQueue.add(
       'execute-workflow',
       { executionId: execution.id },
-      { jobId: execution.id },
+      {
+        jobId: execution.id,
+        removeOnComplete: { count: 500 },
+        removeOnFail: { count: 500 },
+      },
     );
 
     return execution;

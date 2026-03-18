@@ -13,6 +13,42 @@ const TRIGGER_TYPES: NodeType[] = [
   NodeType.TRIGGER_EMAIL,
 ];
 
+/**
+ * Converts a node label to a valid context key.
+ * Must stay in sync with nodeToContextKey() in frontend fieldSuggestions.ts.
+ */
+function nodeToContextKey(label: string): string {
+  return (label || 'node')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_')
+    .replace(/[^\w\u0400-\u04FF]/g, '')
+    || 'node';
+}
+
+/**
+ * Builds a map from node.id → context key, resolving duplicate label collisions.
+ */
+function buildContextKeyMap(nodes: WorkflowNode[]): Map<string, string> {
+  const map = new Map<string, string>();
+  const usedKeys = new Set<string>();
+  for (const node of nodes) {
+    if (TRIGGER_TYPES.includes(node.type)) {
+      map.set(node.id, 'trigger');
+      continue;
+    }
+    const base = nodeToContextKey(node.label);
+    let key = base;
+    let i = 2;
+    while (usedKeys.has(key)) {
+      key = `${base}_${i++}`;
+    }
+    usedKeys.add(key);
+    map.set(node.id, key);
+  }
+  return map;
+}
+
 interface RetryConfig {
   maxAttempts: number;
   backoffMs: number;
@@ -32,6 +68,7 @@ export class ExecutionEngineService {
   ) {}
 
   async run(executionId: string): Promise<void> {
+    this.logger.log(`[run] Loading execution ${executionId}`);
     const execution = await this.prisma.execution.findUnique({
       where: { id: executionId },
       include: {
@@ -42,16 +79,22 @@ export class ExecutionEngineService {
     });
 
     if (!execution) throw new Error(`Execution ${executionId} not found`);
+    this.logger.log(
+      `[run] Found execution ${executionId}, workflow=${execution.workflowId}, ` +
+      `nodes=${execution.workflow.nodes.length}, edges=${execution.workflow.edges.length}`,
+    );
 
     await this.prisma.execution.update({
       where: { id: executionId },
       data: { status: 'RUNNING', startedAt: new Date() },
     });
+    this.logger.log(`[run] Status set to RUNNING for ${executionId}`);
 
     const { nodes, edges } = execution.workflow;
     const context: ExecutionContext = (execution.context as ExecutionContext) || {
       trigger: execution.triggerData ?? {},
     };
+    const contextKeyMap = buildContextKeyMap(nodes);
 
     try {
       const sortedNodes = this.topologicalSort(nodes, edges);
@@ -84,6 +127,7 @@ export class ExecutionEngineService {
           execution.workflow.userId,
         );
         const retryConfig = this.getRetryConfig(nodeConfig);
+        const contextKey = contextKeyMap.get(node.id) ?? node.id;
 
         await this.executeNodeWithRetry(
           executionId,
@@ -91,6 +135,7 @@ export class ExecutionEngineService {
           nodeConfig,
           context,
           retryConfig,
+          contextKey,
         );
       }
 
@@ -142,6 +187,7 @@ export class ExecutionEngineService {
     config: Record<string, unknown>,
     context: ExecutionContext,
     retry: RetryConfig,
+    contextKey: string,
   ): Promise<void> {
     let lastError: Error | undefined;
 
@@ -163,7 +209,7 @@ export class ExecutionEngineService {
           context,
         );
 
-        context[node.id] = result;
+        context[contextKey] = result;
         const duration = Date.now() - start;
 
         await this.executionLogger.log(
@@ -273,6 +319,23 @@ export class ExecutionEngineService {
     nodeType: NodeType,
     userId: string,
   ): Promise<Record<string, unknown>> {
+    if (nodeType === NodeType.ACTION_EMAIL && config.useUserAccount) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { smtpHost: true, smtpPort: true, smtpUser: true, smtpPass: true },
+      });
+      if (!user?.smtpUser) {
+        throw new Error('Email не настроен. Настройте почту в разделе Настройки.');
+      }
+      return {
+        ...config,
+        smtpHost: user.smtpHost,
+        smtpPort: user.smtpPort,
+        smtpUser: user.smtpUser,
+        smtpPass: user.smtpPass,
+      };
+    }
+
     if (nodeType === NodeType.ACTION_TELEGRAM && config.useUserAccount) {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },

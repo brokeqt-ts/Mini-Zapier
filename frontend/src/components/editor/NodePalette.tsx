@@ -27,9 +27,15 @@ export function NodePalette() {
   ];
 
   const onDragStart = (event: DragEvent, nodeType: string, label: string) => {
+    const rect = (event.target as HTMLElement).getBoundingClientRect();
     event.dataTransfer.setData(
       'application/reactflow',
-      JSON.stringify({ nodeType, label }),
+      JSON.stringify({
+        nodeType,
+        label,
+        offsetX: event.clientX - rect.left,
+        offsetY: event.clientY - rect.top,
+      }),
     );
     event.dataTransfer.effectAllowed = 'move';
   };

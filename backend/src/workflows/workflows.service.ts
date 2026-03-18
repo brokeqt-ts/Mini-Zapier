@@ -5,6 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { TriggersService } from '../triggers/triggers.service';
 import { CreateWorkflowDto } from './dto/create-workflow.dto';
 import { UpdateWorkflowDto } from './dto/update-workflow.dto';
 import { SaveCanvasDto } from './dto/save-canvas.dto';
@@ -18,7 +19,10 @@ const TRIGGER_TYPES: NodeType[] = [
 
 @Injectable()
 export class WorkflowsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private triggersService: TriggersService,
+  ) {}
 
   async findAll(userId: string) {
     return this.prisma.workflow.findMany({
@@ -77,7 +81,7 @@ export class WorkflowsService {
       );
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx) => {
       await tx.workflowEdge.deleteMany({ where: { workflowId: id } });
       await tx.workflowNode.deleteMany({ where: { workflowId: id } });
 
@@ -113,6 +117,14 @@ export class WorkflowsService {
         include: { nodes: true, edges: true },
       });
     });
+
+    // If workflow is active, re-register triggers with updated config
+    if (workflow.status === 'ACTIVE') {
+      await this.triggersService.unregisterTriggers(id);
+      await this.triggersService.registerTriggers(id);
+    }
+
+    return updated;
   }
 
   async activate(id: string, userId: string) {
@@ -126,14 +138,19 @@ export class WorkflowsService {
       );
     }
 
-    return this.prisma.workflow.update({
+    const updated = await this.prisma.workflow.update({
       where: { id },
       data: { status: 'ACTIVE' },
     });
+
+    await this.triggersService.registerTriggers(id);
+
+    return updated;
   }
 
   async deactivate(id: string, userId: string) {
     await this.findOne(id, userId);
+    await this.triggersService.unregisterTriggers(id);
     return this.prisma.workflow.update({
       where: { id },
       data: { status: 'PAUSED' },

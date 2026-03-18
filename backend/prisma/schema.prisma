@@ -13,12 +13,34 @@ model User {
   passwordHash     String     @map("password_hash")
   name             String?
   telegramChatId   String?    @map("telegram_chat_id")
+  smtpHost         String?    @map("smtp_host")
+  smtpPort         Int?       @map("smtp_port")
+  smtpUser         String?    @map("smtp_user")
+  smtpPass         String?    @map("smtp_pass")
   createdAt        DateTime   @default(now()) @map("created_at")
   updatedAt        DateTime   @updatedAt @map("updated_at")
 
   workflows        Workflow[]
+  emailAccounts    EmailAccount[]
 
   @@map("users")
+}
+
+model EmailAccount {
+  id       String @id @default(uuid())
+  userId   String @map("user_id")
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label    String
+  smtpHost String @map("smtp_host")
+  smtpPort Int    @default(465) @map("smtp_port")
+  smtpUser String @map("smtp_user")
+  smtpPass String @map("smtp_pass")
+  imapHost String? @map("imap_host")
+  imapPort Int?    @map("imap_port")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("email_accounts")
 }
 
 enum WorkflowStatus {

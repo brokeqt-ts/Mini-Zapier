@@ -7,11 +7,14 @@ import { CronHandler } from './handlers/cron.handler';
 import { EmailHandler } from './handlers/email.handler';
 import { EmailPollProcessor } from './processors/email-poll.processor';
 import { ExecutionModule } from '../execution/execution.module';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
   imports: [
     BullModule.registerQueue({ name: 'workflow' }),
+    BullModule.registerQueue({ name: 'email-poll' }),
     forwardRef(() => ExecutionModule),
+    PrismaModule,
   ],
   controllers: [TriggersController],
   providers: [

@@ -54,6 +54,7 @@
 }
 
 .workflow-card {
+  display: block;
   text-decoration: none;
   color: inherit;
   transition: box-shadow 0.15s;

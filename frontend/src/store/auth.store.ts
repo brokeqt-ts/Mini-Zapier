@@ -6,6 +6,10 @@ interface User {
   email: string;
   name: string | null;
   telegramChatId?: string | null;
+  smtpHost?: string | null;
+  smtpPort?: number | null;
+  smtpUser?: string | null;
+  smtpConfigured?: boolean;
 }
 
 interface AuthState {

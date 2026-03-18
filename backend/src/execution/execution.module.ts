@@ -7,6 +7,7 @@ import { WorkflowProcessor } from './processors/workflow.processor';
 import { ActionsModule } from '../actions/actions.module';
 import { LoggingModule } from '../logging/logging.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     ActionsModule,
     LoggingModule,
     NotificationsModule,
+    PrismaModule,
   ],
   controllers: [ExecutionController],
   providers: [ExecutionService, ExecutionEngineService, WorkflowProcessor],

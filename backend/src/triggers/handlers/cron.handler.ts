@@ -34,10 +34,14 @@ export class CronHandler {
 
   async unregister(workflowId: string): Promise<void> {
     const repeatableJobs = await this.workflowQueue.getRepeatableJobs();
+    const jobName = `cron-${workflowId}`;
     for (const job of repeatableJobs) {
-      if (job.id === `cron-${workflowId}`) {
+      const matchById  = job.id === jobName;
+      const matchByKey = job.key?.includes(workflowId);
+      const matchByName = job.name === 'cron-trigger' && job.key?.includes(workflowId);
+      if (matchById || matchByKey || matchByName) {
         await this.workflowQueue.removeRepeatableByKey(job.key);
-        this.logger.log(`Unregistered cron for workflow ${workflowId}`);
+        this.logger.log(`Unregistered cron for workflow ${workflowId} (key=${job.key})`);
       }
     }
   }

@@ -39,8 +39,20 @@ export function WorkflowEditorPage() {
     return () => store.clear();
   }, [id]);
 
+  const TRIGGER_TYPES = ['TRIGGER_WEBHOOK', 'TRIGGER_CRON', 'TRIGGER_EMAIL'];
+
   const handleSave = useCallback(async () => {
     if (!id) return;
+
+    // Client-side: prevent multiple trigger nodes
+    const triggerNodes = store.nodes.filter(n =>
+      TRIGGER_TYPES.includes(n.data.nodeType as string)
+    );
+    if (triggerNodes.length > 1) {
+      toast.error(t.only_one_trigger);
+      return;
+    }
+
     setSaving(true);
     try {
       const nodes = store.nodes.map((n) => ({
@@ -65,8 +77,10 @@ export function WorkflowEditorPage() {
       }
 
       toast.success(t.saved);
-    } catch {
-      toast.error(t.save_error);
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(msg ? String(msg) : t.save_error);
     } finally {
       setSaving(false);
     }

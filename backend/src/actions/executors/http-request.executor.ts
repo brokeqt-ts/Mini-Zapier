@@ -16,7 +16,19 @@ export class HttpRequestExecutor implements ActionExecutor {
   ): Promise<Record<string, unknown>> {
     const url = this.interpolate(config.url as string, context);
     const method = (config.method as string) || 'GET';
-    const headers = (config.headers as Record<string, string>) || {};
+
+    // headers can be stored as JSON string (from the UI builder) or plain object
+    let rawHeaders: Record<string, string> = {};
+    if (typeof config.headers === 'string' && config.headers.trim()) {
+      try { rawHeaders = JSON.parse(config.headers); } catch { /* ignore */ }
+    } else if (config.headers && typeof config.headers === 'object') {
+      rawHeaders = config.headers as Record<string, string>;
+    }
+    const headers: Record<string, string> = {};
+    for (const [k, v] of Object.entries(rawHeaders)) {
+      headers[k] = this.interpolate(v, context);
+    }
+
     const body = config.body
       ? this.interpolate(config.body as string, context)
       : undefined;
@@ -32,12 +44,13 @@ export class HttpRequestExecutor implements ActionExecutor {
 
     return {
       status: response.status,
-      headers: response.headers,
+      headers: Object.fromEntries(Object.entries(response.headers)),
       body: response.data,
     };
   }
 
   private interpolate(template: string, context: ExecutionContext): string {
+    if (!template) return template ?? '';
     return template.replace(/\{\{(.+?)\}\}/g, (_match, path: string) => {
       const keys = path.trim().split('.');
       let value: unknown = context;

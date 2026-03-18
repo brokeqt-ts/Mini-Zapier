@@ -45,7 +45,9 @@ export class ExecutionController {
     @CurrentUser() user: { userId: string },
   ) {
     // Ownership check happens in execution service via workflow lookup
-    return this.executionService.startExecution(workflowId);
+    return this.executionService.startExecution(workflowId, {
+      triggeredAt: new Date().toISOString().replace('T', ' ').slice(0, 19),
+    });
   }
 
   @Post('executions/:id/cancel')

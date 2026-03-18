@@ -5,8 +5,10 @@ import { EmailExecutor } from './executors/email.executor';
 import { TelegramExecutor } from './executors/telegram.executor';
 import { DatabaseQueryExecutor } from './executors/database-query.executor';
 import { DataTransformExecutor } from './executors/data-transform.executor';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
+  imports: [PrismaModule],
   providers: [
     ActionsService,
     HttpRequestExecutor,

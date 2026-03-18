@@ -3,6 +3,7 @@ import {
   Post,
   Param,
   Body,
+  Headers,
   NotFoundException,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -21,15 +22,22 @@ export class TriggersController {
   async handleWebhook(
     @Param('path') path: string,
     @Body() body: Record<string, unknown>,
+    @Headers() headers: Record<string, string>,
   ) {
     const registration = this.webhookHandler.resolve(path);
     if (!registration) {
       throw new NotFoundException('Webhook not found');
     }
 
+    const triggerData = {
+      body,
+      headers,
+      ...body, // keep top-level fields for backward compatibility
+    };
+
     const execution = await this.executionService.startExecution(
       registration.workflowId,
-      body,
+      triggerData,
     );
 
     return { executionId: execution.id, status: 'triggered' };

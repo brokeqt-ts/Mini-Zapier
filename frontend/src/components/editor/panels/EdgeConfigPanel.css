@@ -4,7 +4,7 @@
   align-items: center;
 }
 
-/* Empty state — no condition yet */
+/* Empty state */
 .cond-empty-state {
   display: flex;
   flex-direction: column;
@@ -24,51 +24,208 @@
   font-size: 13px;
 }
 
-/* Builder form */
+/* Builder layout */
 .cond-builder {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-/* Expression preview */
-.cond-result {
-  background: var(--bg);
+/* AND / OR logic selector */
+.cond-logic-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.cond-logic-label {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.cond-logic-toggle {
+  display: flex;
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 8px 10px;
-  margin-top: 2px;
+  overflow: hidden;
 }
 
-.cond-result-label {
-  display: block;
-  font-size: 11px;
+.cond-logic-btn {
+  flex: 1;
+  padding: 6px 14px;
+  font-size: 13px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
   color: var(--text-secondary);
-  margin-bottom: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  transition: background 0.15s, color 0.15s;
 }
 
-.cond-result-code {
-  display: block;
-  font-size: 11px;
+.cond-logic-btn:hover { background: var(--bg); }
+.cond-logic-btn.active { background: var(--primary); color: #fff; }
+
+/* Rule card */
+.cond-rule-card {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-secondary, var(--bg));
+}
+
+/* AND / OR badge above the card (for 2nd+ rules) */
+.cond-rule-badge {
+  position: absolute;
+  top: -11px;
+  left: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--primary);
+  padding: 1px 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Inline row: two inputs side by side */
+.cond-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.cond-row .input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  font-size: 13px;
+}
+
+.cond-select {
+  flex: 0 0 auto;
+  width: 50%;
+}
+
+/* Remove single rule × button */
+.cond-remove-rule-btn {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  padding: 0;
+}
+
+.cond-remove-rule-btn:hover {
+  border-color: #f87171;
+  color: #ef4444;
+}
+
+/* Add rule button */
+.cond-add-rule-btn {
+  font-size: 13px;
+  padding: 8px 14px;
+}
+
+/* ─── Field picker ────────────────────────────────────────────────────────── */
+
+.field-picker-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.field-picker-wrap .input {
+  width: 100%;
+}
+
+.field-picker-list {
+  position: absolute;
+  z-index: 100;
+  bottom: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.field-picker-item {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 14px;
+  cursor: pointer;
+  gap: 2px;
+  transition: background 0.1s;
+}
+
+.field-picker-item:hover {
+  background: var(--bg);
+}
+
+.field-picker-field {
+  font-size: 13px;
+  font-weight: 600;
   font-family: 'Courier New', monospace;
   color: var(--primary);
-  word-break: break-all;
-  line-height: 1.5;
 }
 
-/* Footer buttons */
-.cond-footer {
-  display: flex;
-  gap: 8px;
-  padding-top: 4px;
-}
-
-.cond-mode-btn {
-  flex: 1;
+.field-picker-label {
   font-size: 12px;
+  color: var(--text-secondary);
 }
+
+/* ─── Advanced section ───────────────────────────────────────────────────── */
+
+.cond-advanced-section {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cond-advanced-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s;
+}
+
+.cond-advanced-toggle:hover { color: var(--primary); }
+
+.cond-advanced-textarea {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  resize: vertical;
+}
+
+/* ─── Remove condition ───────────────────────────────────────────────────── */
 
 .cond-remove-btn {
   font-size: 12px;
@@ -81,6 +238,4 @@
   transition: background 0.15s;
 }
 
-.cond-remove-btn:hover {
-  background: #fef2f2;
-}
+.cond-remove-btn:hover { background: #fef2f2; }

@@ -3,6 +3,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
 export interface EmailTriggerConfig {
+  emailAccountId?: string;
   imapHost: string;
   imapPort: number;
   imapUser: string;
@@ -15,7 +16,7 @@ export interface EmailTriggerConfig {
 export class EmailHandler {
   private readonly logger = new Logger(EmailHandler.name);
 
-  constructor(@InjectQueue('workflow') private workflowQueue: Queue) {}
+  constructor(@InjectQueue('email-poll') private workflowQueue: Queue) {}
 
   async register(
     workflowId: string,
@@ -27,6 +28,7 @@ export class EmailHandler {
       'email-poll',
       {
         workflowId,
+        emailAccountId: config.emailAccountId,
         imapHost: config.imapHost,
         imapPort: config.imapPort || 993,
         imapUser: config.imapUser,
@@ -47,12 +49,13 @@ export class EmailHandler {
 
   async unregister(workflowId: string): Promise<void> {
     const repeatableJobs = await this.workflowQueue.getRepeatableJobs();
+    const jobName = `email-poll-${workflowId}`;
     for (const job of repeatableJobs) {
-      if (job.id === `email-poll-${workflowId}`) {
+      const matchById  = job.id === jobName;
+      const matchByKey = job.key?.includes(workflowId);
+      if (matchById || matchByKey) {
         await this.workflowQueue.removeRepeatableByKey(job.key);
-        this.logger.log(
-          `Unregistered email polling for workflow ${workflowId}`,
-        );
+        this.logger.log(`Unregistered email polling for workflow ${workflowId} (key=${job.key})`);
       }
     }
   }

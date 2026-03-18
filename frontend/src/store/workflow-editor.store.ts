@@ -25,6 +25,7 @@ interface WorkflowEditorState {
   addNode: (node: Node) => void;
   deleteNode: (nodeId: string) => void;
   updateNodeConfig: (nodeId: string, config: Record<string, unknown>) => void;
+  updateNodeLabel: (nodeId: string, label: string) => void;
   selectNode: (nodeId: string | null) => void;
   selectEdge: (edgeId: string | null) => void;
   updateEdgeCondition: (edgeId: string, conditionExpr: string) => void;
@@ -76,6 +77,13 @@ export const useWorkflowEditorStore = create<WorkflowEditorState>(
       set({
         nodes: get().nodes.map((n) =>
           n.id === nodeId ? { ...n, data: { ...n.data, config } } : n,
+        ),
+      }),
+
+    updateNodeLabel: (nodeId, label) =>
+      set({
+        nodes: get().nodes.map((n) =>
+          n.id === nodeId ? { ...n, data: { ...n.data, label } } : n,
         ),
       }),
 

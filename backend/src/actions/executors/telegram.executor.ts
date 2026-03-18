@@ -15,8 +15,12 @@ export class TelegramExecutor implements ActionExecutor {
     context: ExecutionContext,
   ): Promise<Record<string, unknown>> {
     const botToken = config.botToken as string;
-    const chatId = config.chatId as string;
+    const chatId = this.interpolate(config.chatId as string, context);
     const text = this.interpolate(config.messageTemplate as string, context);
+
+    if (!text?.trim()) {
+      throw new Error('Узел ACTION_TELEGRAM: текст сообщения не заполнен. Укажите messageTemplate в настройках узла.');
+    }
 
     const response = await axios.post(
       `https://api.telegram.org/bot${botToken}/sendMessage`,
@@ -31,6 +35,7 @@ export class TelegramExecutor implements ActionExecutor {
   }
 
   private interpolate(template: string, context: ExecutionContext): string {
+    if (!template) return template ?? '';
     return template.replace(/\{\{(.+?)\}\}/g, (_match, path: string) => {
       const keys = path.trim().split('.');
       let value: unknown = context;

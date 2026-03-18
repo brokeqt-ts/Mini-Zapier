@@ -55,9 +55,23 @@ export class AuthService {
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, name: true, telegramChatId: true, createdAt: true },
+      select: { id: true, email: true, name: true, telegramChatId: true, createdAt: true, smtpHost: true, smtpPort: true, smtpUser: true },
     });
-    return user;
+    if (!user) return null;
+    return { ...user, smtpConfigured: !!(user.smtpHost && user.smtpUser) };
+  }
+
+  async updateProfile(userId: string, dto: { smtpHost?: string; smtpPort?: number; smtpUser?: string; smtpPass?: string }) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(dto.smtpHost !== undefined && { smtpHost: dto.smtpHost || null }),
+        ...(dto.smtpPort !== undefined && { smtpPort: dto.smtpPort || null }),
+        ...(dto.smtpUser !== undefined && { smtpUser: dto.smtpUser || null }),
+        ...(dto.smtpPass !== undefined && { smtpPass: dto.smtpPass || null }),
+      },
+    });
+    return this.getProfile(userId);
   }
 
   private generateToken(userId: string, email: string) {
