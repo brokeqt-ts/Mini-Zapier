@@ -85,119 +85,104 @@ export function DashboardPage() {
     <div className="dashboard">
       <h2>{t.dashboard}</h2>
 
-      {stats && (
-        <div className="stats-row">
-          <div className="stat-card card">
-            <div className="stat-value">{stats.totalWorkflows}</div>
-            <div className="stat-label">{t.total_workflows}</div>
-          </div>
-          <div className="stat-card card">
-            <div className="stat-value">{stats.activeWorkflows}</div>
-            <div className="stat-label">{t.active_count}</div>
-          </div>
-          <div className="stat-card card">
-            <div className="stat-value">{stats.totalExecutions}</div>
-            <div className="stat-label">{t.total_executions}</div>
-          </div>
-          <div className="stat-card card">
-            <div className="stat-value">{stats.successRate}%</div>
-            <div className="stat-label">{t.success_rate}</div>
-          </div>
-        </div>
-      )}
+      <div className="dashboard-layout">
+        {/* ── Left column ── */}
+        <div className="dashboard-main">
+          {stats && (
+            <div className="stats-row">
+              <div className="stat-card card">
+                <div className="stat-value">{stats.totalWorkflows}</div>
+                <div className="stat-label">{t.total_workflows}</div>
+              </div>
+              <div className="stat-card card">
+                <div className="stat-value">{stats.activeWorkflows}</div>
+                <div className="stat-label">{t.active_count}</div>
+              </div>
+              <div className="stat-card card">
+                <div className="stat-value">{stats.totalExecutions}</div>
+                <div className="stat-label">{t.total_executions}</div>
+              </div>
+              <div className="stat-card card">
+                <div className="stat-value">{stats.successRate}%</div>
+                <div className="stat-label">{t.success_rate}</div>
+              </div>
+            </div>
+          )}
 
-      <div className="section">
-        <h3>{t.workflows_section}</h3>
-        <div className="create-row">
-          <input
-            className="input"
-            placeholder={t.new_workflow_placeholder}
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-          />
-          <button className="btn btn-primary" onClick={handleCreate}>
-            {t.create}
-          </button>
-        </div>
-        <div className="workflow-grid">
-          {workflows.map((wf) => (
-            <div key={wf.id} style={{ position: 'relative' }}>
-              <Link to={`/workflows/${wf.id}`} className="card workflow-card">
-                <div className="wf-header">
-                  <span className="wf-name">{wf.name}</span>
-                  <span className={`badge ${statusBadge[wf.status]}`}>
-                    {statusLabel[wf.status] ?? wf.status}
-                  </span>
-                </div>
-                {wf.description && (
-                  <p className="wf-desc">{wf.description}</p>
-                )}
-                <div className="wf-meta">
-                  <span>{wf._count?.nodes ?? 0} {t.nodes_count}</span>
-                  <span>{wf._count?.executions ?? 0} {t.executions_count}</span>
-                </div>
-              </Link>
-              <button
-                className="btn-trash"
-                title={t.delete_confirm}
-                onClick={(e) => handleDelete(e, wf.id)}
-              >
-                🗑
+          <div className="section">
+            <h3>{t.workflows_section}</h3>
+            <div className="create-row">
+              <input
+                className="input"
+                placeholder={t.new_workflow_placeholder}
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+              />
+              <button className="btn btn-primary" onClick={handleCreate}>
+                {t.create}
               </button>
             </div>
-          ))}
-          {workflows.length === 0 && (
-            <p className="empty-text">{t.no_workflows}</p>
-          )}
+            <div className="workflow-grid">
+              {workflows.map((wf) => (
+                <div key={wf.id} style={{ position: 'relative' }}>
+                  <Link to={`/workflows/${wf.id}`} className="card workflow-card">
+                    <div className="wf-header">
+                      <span className="wf-name">{wf.name}</span>
+                      <span className={`badge ${statusBadge[wf.status]}`}>
+                        {statusLabel[wf.status] ?? wf.status}
+                      </span>
+                    </div>
+                    {wf.description && (
+                      <p className="wf-desc">{wf.description}</p>
+                    )}
+                    <div className="wf-meta">
+                      <span>{wf._count?.nodes ?? 0} {t.nodes_count}</span>
+                      <span>{wf._count?.executions ?? 0} {t.executions_count}</span>
+                    </div>
+                  </Link>
+                  <button
+                    className="btn-trash"
+                    title={t.delete_confirm}
+                    onClick={(e) => handleDelete(e, wf.id)}
+                  >
+                    🗑
+                  </button>
+                </div>
+              ))}
+              {workflows.length === 0 && (
+                <p className="empty-text">{t.no_workflows}</p>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
 
-      {recentExecs.length > 0 && (
-        <div className="section">
-          <h3>{t.recent_executions}</h3>
-          <table className="exec-table">
-            <thead>
-              <tr>
-                <th>{t.col_workflow}</th>
-                <th>{t.col_status}</th>
-                <th>{t.col_started}</th>
-                <th>{t.col_duration}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentExecs.slice(0, 10).map((exec) => (
-                <tr key={exec.id}>
-                  <td>
-                    <Link to={`/executions/${exec.id}`}>
-                      {exec.workflow?.name ?? exec.workflowId.slice(0, 8)}
-                    </Link>
-                  </td>
-                  <td>
+        {/* ── Right column: recent executions ── */}
+        {recentExecs.length > 0 && (
+          <div className="dashboard-sidebar">
+            <h3>{t.recent_executions}</h3>
+            <div className="exec-list">
+              {recentExecs.slice(0, 15).map((exec) => (
+                <Link key={exec.id} to={`/executions/${exec.id}`} className="exec-item">
+                  <div className="exec-item-name">
+                    {exec.workflow?.name ?? exec.workflowId.slice(0, 8)}
+                  </div>
+                  <div className="exec-item-meta">
                     <span className={`badge ${statusBadge[exec.status]}`}>
                       {statusLabel[exec.status] ?? exec.status}
                     </span>
-                  </td>
-                  <td>
-                    {exec.startedAt
-                      ? new Date(exec.startedAt).toLocaleString()
-                      : '-'}
-                  </td>
-                  <td>
-                    {exec.startedAt && exec.completedAt
-                      ? `${Math.round(
-                          (new Date(exec.completedAt).getTime() -
-                            new Date(exec.startedAt).getTime()) /
-                            1000,
-                        )}s`
-                      : '-'}
-                  </td>
-                </tr>
+                    <span className="exec-item-time">
+                      {exec.startedAt
+                        ? new Date(exec.startedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                        : '-'}
+                    </span>
+                  </div>
+                </Link>
               ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
