@@ -1,6 +1,6 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "npm install --include=dev && npm run build:shared && cd backend && npx prisma generate && npx nest build && cd .. && npm run build:frontend"
+buildCommand = "npm install --include=dev && npm run build:shared && cd backend && rm -rf dist node_modules/.cache && npx prisma generate && npx nest build && cd .. && npm run build:frontend"
 
 [deploy]
 startCommand = "cd backend && npx prisma migrate deploy && node dist/main"
