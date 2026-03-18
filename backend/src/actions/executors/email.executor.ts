@@ -24,7 +24,13 @@ export class EmailExecutor implements ActionExecutor {
         where: { id: config.emailAccountId as string },
       });
       if (account) {
-        config = { ...config, smtpHost: account.smtpHost, smtpPort: account.smtpPort, smtpUser: account.smtpUser, smtpPass: account.smtpPass };
+        config = {
+          ...config,
+          smtpHost: account.smtpHost,
+          smtpPort: account.smtpPort,
+          smtpUser: account.smtpUser,
+          smtpPass: account.smtpPass,
+        };
       }
     }
 
@@ -37,38 +43,57 @@ export class EmailExecutor implements ActionExecutor {
     const smtpPass =
       (config.smtpPass as string) || this.config.get('SMTP_PASS');
 
-    // Resolve host to IP to bypass Node.js c-ares DNS timeout bug on Windows
-    const resolvedHost = await new Promise<string>((resolve) => {
-      require('dns').lookup(smtpHost, { family: 4 }, (_err: Error | null, addr: string) => {
-        resolve(addr || smtpHost);
-      });
-    });
+    if (!smtpUser || !smtpPass) {
+      throw new Error(
+        'SMTP credentials not configured. Add an email account in Settings or set SMTP_USER/SMTP_PASS environment variables.',
+      );
+    }
 
-    const secure = smtpPort === 465;
-    const transporter = nodemailer.createTransport({
-      host: resolvedHost,
-      port: smtpPort,
-      secure,
-      requireTLS: !secure,
-      tls: { servername: smtpHost, rejectUnauthorized: true },
-      auth: smtpUser ? { user: smtpUser, pass: smtpPass } : undefined,
-      connectionTimeout: 15000,
-      greetingTimeout: 15000,
-      socketTimeout: 20000,
-    } as nodemailer.TransportOptions);
+    // Try the configured port first; if TCP connection times out, retry with the alternative port
+    const ports = smtpPort === 465 ? [465, 587] : [smtpPort, 465];
 
-    const to = this.interpolate(config.to as string, context);
-    const subject = this.interpolate(config.subject as string, context);
-    const body = this.interpolate(config.bodyTemplate as string, context);
+    let lastError: Error | null = null;
+    for (const port of ports) {
+      const secure = port === 465;
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port,
+        secure,
+        requireTLS: !secure,
+        tls: { servername: smtpHost, rejectUnauthorized: true },
+        auth: { user: smtpUser, pass: smtpPass },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
+      } as nodemailer.TransportOptions);
 
-    const info = await transporter.sendMail({
-      from: smtpUser,
-      to,
-      subject,
-      html: body,
-    });
+      const to = this.interpolate(config.to as string, context);
+      const subject = this.interpolate(config.subject as string, context);
+      const body = this.interpolate(config.bodyTemplate as string, context);
 
-    return { messageId: info.messageId, accepted: info.accepted };
+      try {
+        const info = await transporter.sendMail({
+          from: smtpUser,
+          to,
+          subject,
+          html: body,
+        });
+        return { messageId: info.messageId, accepted: info.accepted };
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        // Only retry on connection-level errors, not auth/protocol errors
+        const isConnectionError =
+          msg.includes('timeout') ||
+          msg.includes('ECONNREFUSED') ||
+          msg.includes('ECONNRESET') ||
+          msg.includes('ETIMEDOUT') ||
+          msg.includes('connect');
+        lastError = new Error(`SMTP ${smtpHost}:${port} — ${msg}`);
+        if (!isConnectionError) break; // Auth/config error — no point retrying
+      }
+    }
+
+    throw lastError ?? new Error('Failed to send email');
   }
 
   private interpolate(template: string, context: ExecutionContext): string {
