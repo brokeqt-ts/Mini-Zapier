@@ -387,6 +387,10 @@ export const translations = {
     resend_api_hint: 'Ключ и верификация отправителя — на',
     imap_password_label: 'Пароль приложения',
     imap_auto_configured: 'IMAP настроен автоматически',
+    provider_send_only: 'только отправка',
+    provider_receive_only: 'только получение',
+    provider_resend_note: 'Resend используется только для отправки писем (узел «Отправить Email»). Для триггера «Новое письмо» добавьте отдельный IMAP-аккаунт.',
+    provider_imap_note: 'Этот аккаунт используется только для чтения входящих писем (триггер «Новое письмо»). Для отправки используйте Resend.',
 
     // Field suggestion labels
     fs_body_whole: 'Тело целиком (объект)',
@@ -795,6 +799,10 @@ export const translations = {
     resend_api_hint: 'Get your API key and verify your sender address at',
     imap_password_label: 'App password',
     imap_auto_configured: 'IMAP configured automatically',
+    provider_send_only: 'send only',
+    provider_receive_only: 'receive only',
+    provider_resend_note: 'Resend is used only for sending emails (the "Send Email" node). To receive emails, add a separate IMAP account.',
+    provider_imap_note: 'This account is used only for reading incoming emails (the "New Email" trigger). To send emails, use Resend.',
 
     // Field suggestion labels
     fs_body_whole: 'Whole body (object)',

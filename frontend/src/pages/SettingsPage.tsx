@@ -235,9 +235,23 @@ function EmailAccountsManager() {
             >
               <option value="">{t.provider_custom}</option>
               {PROVIDERS.map(p => (
-                <option key={p.name} value={p.name}>{p.name}</option>
+                <option key={p.name} value={p.name}>
+                  {p.name}{p.type === 'resend' ? ` — ${t.provider_send_only}` : ` — ${t.provider_receive_only}`}
+                </option>
               ))}
             </select>
+            {providerType === 'resend' && (
+              <div className="smtp-hint smtp-hint--generic" style={{ marginTop: 6 }}>
+                <span className="smtp-hint-icon">📤</span>
+                <span>{t.provider_resend_note}</span>
+              </div>
+            )}
+            {providerType === 'imap' && (
+              <div className="smtp-hint smtp-hint--generic" style={{ marginTop: 6 }}>
+                <span className="smtp-hint-icon">📥</span>
+                <span>{t.provider_imap_note}</span>
+              </div>
+            )}
           </div>
 
           {/* Account label */}
