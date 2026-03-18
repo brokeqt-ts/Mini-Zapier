@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import * as path from 'path';
 import { BullModule } from '@nestjs/bullmq';
 import { PrismaModule } from './prisma/prisma.module';
@@ -17,6 +18,10 @@ import { EmailAccountsModule } from './email-accounts/email-accounts.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: path.resolve(__dirname, '../../.env'),
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: path.join(__dirname, '..', '..', 'frontend', 'dist'),
+      exclude: ['/api/(.*)'],
     }),
     BullModule.forRoot({
       connection: {

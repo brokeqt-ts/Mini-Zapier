@@ -21,14 +21,16 @@
 
 - [Описание](#описание)
 - [Стек технологий](#стек-технологий)
-- [Быстрый старт](#быстрый-старт)
+- [Деплой на Railway](#деплой-на-railway)
+- [Быстрый старт (локально)](#быстрый-старт)
 - [Обучающий гайд](#обучающий-гайд)
 
 ## 🇬🇧 English
 
 - [Description](#description)
 - [Tech Stack](#tech-stack)
-- [Quick Start](#quick-start)
+- [Deploy to Railway](#deploy-to-railway)
+- [Quick Start (local)](#quick-start)
 - [Tutorial Guide](#tutorial-guide)
 
 ---
@@ -87,6 +89,41 @@ Mini-Zapier — это self-hosted платформа автоматизации
 ### Инфраструктура
 - **PostgreSQL** — основная БД
 - **Redis** — брокер очередей BullMQ
+
+---
+
+## Деплой на Railway
+
+Railway — рекомендуемая платформа для деплоя. Фронтенд автоматически раздаётся NestJS как статика (один сервис).
+
+### 1. Создать проект на Railway
+
+1. Зайдите на [railway.app](https://railway.app) и создайте новый проект.
+2. Нажмите **"Add Service"** → **"GitHub Repo"** → выберите `Mini-Zapier`.
+3. Добавьте ещё два сервиса: **"Add Service"** → **"Database"** → **PostgreSQL**, затем аналогично **Redis**.
+
+### 2. Переменные окружения бэкенда
+
+В сервисе приложения перейдите в **Variables** и добавьте:
+
+| Переменная | Значение |
+|------------|----------|
+| `DATABASE_URL` | Скопируйте из сервиса PostgreSQL (кнопка **"Connect"**) |
+| `REDIS_HOST` | Скопируйте `REDISHOST` из сервиса Redis |
+| `REDIS_PORT` | Скопируйте `REDISPORT` из сервиса Redis (обычно `6379`) |
+| `JWT_SECRET` | Любая длинная случайная строка |
+
+> Railway автоматически подставляет `PORT` — ничего дополнительно настраивать не нужно.
+
+### 3. Задеплоить
+
+Railway автоматически запустит сборку при пуше в `main`. Процесс:
+1. `npm install` — установка зависимостей
+2. Сборка shared-пакета, фронтенда, бэкенда
+3. `prisma migrate deploy` — применение миграций
+4. `node dist/main` — запуск сервера
+
+После деплоя приложение будет доступно по автоматически выданному URL (например `mini-zapier-production.up.railway.app`).
 
 ---
 
@@ -358,6 +395,41 @@ Mini-Zapier is a self-hosted automation platform inspired by Zapier and n8n. You
 ### Infrastructure
 - **PostgreSQL** — primary database
 - **Redis** — BullMQ message broker
+
+---
+
+## Deploy to Railway
+
+Railway is the recommended deployment platform. The frontend is served as static files by NestJS (single service).
+
+### 1. Create a Railway project
+
+1. Go to [railway.app](https://railway.app) and create a new project.
+2. Click **"Add Service"** → **"GitHub Repo"** → select `Mini-Zapier`.
+3. Add two more services: **"Add Service"** → **"Database"** → **PostgreSQL**, then **Redis**.
+
+### 2. Set environment variables
+
+In the app service go to **Variables** and add:
+
+| Variable | Value |
+|----------|-------|
+| `DATABASE_URL` | Copy from the PostgreSQL service (**"Connect"** button) |
+| `REDIS_HOST` | Copy `REDISHOST` from the Redis service |
+| `REDIS_PORT` | Copy `REDISPORT` from the Redis service (usually `6379`) |
+| `JWT_SECRET` | Any long random string |
+
+> Railway automatically provides `PORT` — no extra configuration needed.
+
+### 3. Deploy
+
+Railway automatically builds on every push to `main`:
+1. `npm install` — install all dependencies
+2. Build shared package, frontend, backend
+3. `prisma migrate deploy` — apply DB migrations
+4. `node dist/main` — start the server
+
+After deploy the app is available at the auto-assigned URL (e.g. `mini-zapier-production.up.railway.app`).
 
 ---
 
