@@ -14,29 +14,19 @@ interface MailProvider {
   smtpPort: number;
   imapHost: string;
   imapPort: number;
-  railwayOk?: boolean; // works reliably from cloud/Railway
-  railwayWarn?: boolean; // known to block cloud IPs
 }
 
-// Relay services — work from Railway and any cloud provider
 const PROVIDERS_RELAY: MailProvider[] = [
-  { name: 'Resend',   smtpHost: 'smtp.resend.com',      smtpPort: 465, imapHost: '', imapPort: 0, railwayOk: true },
-  { name: 'SendGrid', smtpHost: 'smtp.sendgrid.net',     smtpPort: 587, imapHost: '', imapPort: 0, railwayOk: true },
-  { name: 'Brevo',    smtpHost: 'smtp-relay.brevo.com',  smtpPort: 587, imapHost: '', imapPort: 0, railwayOk: true },
+  { name: 'Resend',   smtpHost: 'smtp.resend.com',      smtpPort: 465, imapHost: '', imapPort: 0 },
+  { name: 'SendGrid', smtpHost: 'smtp.sendgrid.net',     smtpPort: 587, imapHost: '', imapPort: 0 },
+  { name: 'Brevo',    smtpHost: 'smtp-relay.brevo.com',  smtpPort: 587, imapHost: '', imapPort: 0 },
+  { name: 'Gmail',           smtpHost: 'smtp.gmail.com',         smtpPort: 587, imapHost: 'imap.gmail.com',        imapPort: 993 },
+  { name: 'Outlook / Hotmail', smtpHost: 'smtp-mail.outlook.com', smtpPort: 587, imapHost: 'outlook.office365.com', imapPort: 993 },
 ];
 
-// Standard mail providers — may be blocked from cloud IPs
-const PROVIDERS_STANDARD: MailProvider[] = [
-  { name: 'Gmail',           smtpHost: 'smtp.gmail.com',         smtpPort: 587, imapHost: 'imap.gmail.com',         imapPort: 993 },
-  { name: 'Outlook / Hotmail', smtpHost: 'smtp-mail.outlook.com', smtpPort: 587, imapHost: 'outlook.office365.com',  imapPort: 993 },
-  { name: 'Yahoo Mail',      smtpHost: 'smtp.mail.yahoo.com',    smtpPort: 465, imapHost: 'imap.mail.yahoo.com',    imapPort: 993 },
-  { name: 'iCloud',          smtpHost: 'smtp.mail.me.com',       smtpPort: 587, imapHost: 'imap.mail.me.com',       imapPort: 993 },
-  { name: 'Яндекс',          smtpHost: 'smtp.yandex.com',        smtpPort: 465, imapHost: 'imap.yandex.ru',         imapPort: 993, railwayWarn: true },
-  { name: 'Mail.ru',         smtpHost: 'smtp.mail.ru',           smtpPort: 465, imapHost: 'imap.mail.ru',           imapPort: 993, railwayWarn: true },
-  { name: 'Rambler',         smtpHost: 'smtp.rambler.ru',        smtpPort: 465, imapHost: 'imap.rambler.ru',        imapPort: 993, railwayWarn: true },
-];
+const PROVIDERS_STANDARD: MailProvider[] = [];
 
-const PROVIDERS: MailProvider[] = [...PROVIDERS_RELAY, ...PROVIDERS_STANDARD];
+const PROVIDERS: MailProvider[] = PROVIDERS_RELAY;
 
 /** Maps known SMTP hosts → IMAP host. Falls back to smtp→imap prefix swap. */
 const SMTP_TO_IMAP: Record<string, string> = {
@@ -226,33 +216,10 @@ function EmailAccountsManager() {
               }}
             >
               <option value="">{t.provider_custom}</option>
-              <optgroup label={`⚡ ${t.smtp_relay_badge}`}>
-                {PROVIDERS_RELAY.map(p => (
-                  <option key={p.smtpHost} value={p.name}>{p.name}</option>
-                ))}
-              </optgroup>
-              <optgroup label="— Standard —">
-                {PROVIDERS_STANDARD.map(p => (
-                  <option key={p.smtpHost} value={p.name}>{p.name}</option>
-                ))}
-              </optgroup>
+              {PROVIDERS.map(p => (
+                <option key={p.smtpHost} value={p.name}>{p.name}</option>
+              ))}
             </select>
-            {(() => {
-              const sel = PROVIDERS.find(p => p.smtpHost === form.smtpHost);
-              if (sel?.railwayOk) return (
-                <div className="smtp-hint" style={{ marginTop: 6 }}>
-                  <span className="smtp-hint-icon">⚡</span>
-                  <span>{t.smtp_relay_badge}</span>
-                </div>
-              );
-              if (sel?.railwayWarn) return (
-                <div className="smtp-hint smtp-hint--generic" style={{ marginTop: 6 }}>
-                  <span className="smtp-hint-icon">⚠️</span>
-                  <span>{t.smtp_relay_warning}</span>
-                </div>
-              );
-              return null;
-            })()}
           </div>
           <div className="form-group">
             <label>{t.account_name}</label>
