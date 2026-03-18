@@ -24,10 +24,13 @@ import { EmailAccountsModule } from './email-accounts/email-accounts.module';
       exclude: ['/api/(.*)'],
     }),
     BullModule.forRoot({
-      connection: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379', 10),
-      },
+      connection: process.env.REDIS_URL
+        ? { url: process.env.REDIS_URL }
+        : {
+            host: process.env.REDIS_HOST || 'localhost',
+            port: parseInt(process.env.REDIS_PORT || '6379', 10),
+            password: process.env.REDIS_PASSWORD,
+          },
     }),
     PrismaModule,
     AuthModule,
