@@ -6,6 +6,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
+import { CryptoService } from '../common/crypto/crypto.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
@@ -14,6 +15,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private crypto: CryptoService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -68,7 +70,9 @@ export class AuthService {
         ...(dto.smtpHost !== undefined && { smtpHost: dto.smtpHost || null }),
         ...(dto.smtpPort !== undefined && { smtpPort: dto.smtpPort || null }),
         ...(dto.smtpUser !== undefined && { smtpUser: dto.smtpUser || null }),
-        ...(dto.smtpPass !== undefined && { smtpPass: dto.smtpPass || null }),
+        ...(dto.smtpPass !== undefined && {
+          smtpPass: dto.smtpPass ? this.crypto.encrypt(dto.smtpPass) : null,
+        }),
       },
     });
     return this.getProfile(userId);

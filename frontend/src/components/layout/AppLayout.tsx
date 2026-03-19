@@ -13,8 +13,8 @@ export function AppLayout() {
     loadProfile();
   }, [loadProfile]);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 

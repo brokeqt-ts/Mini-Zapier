@@ -7,6 +7,7 @@ import {
   ExecutionContext,
 } from './action-executor.interface';
 import { PrismaService } from '../../prisma/prisma.service';
+import { interpolate } from './interpolate.util';
 
 @Injectable()
 export class EmailExecutor implements ActionExecutor {
@@ -42,9 +43,9 @@ export class EmailExecutor implements ActionExecutor {
     if (!smtpUser) throw new Error('SMTP login not configured. Add an email account in Settings.');
     if (!smtpPass) throw new Error('SMTP password / API key not configured. Add an email account in Settings.');
 
-    const to      = this.interpolate(config.to as string, context);
-    const subject = this.interpolate(config.subject as string, context);
-    const body    = this.interpolate(config.bodyTemplate as string, context)
+    const to      = interpolate(config.to as string, context);
+    const subject = interpolate(config.subject as string, context);
+    const body    = interpolate(config.bodyTemplate as string, context)
       .replace(/\r\n/g, '\n')
       .replace(/\n/g, '<br>\n');
 
@@ -154,20 +155,5 @@ export class EmailExecutor implements ActionExecutor {
     return { messageId: data.messageId ?? '', accepted: [to] };
   }
 
-  // ── interpolate ───────────────────────────────────────────────────────────
-  private interpolate(template: string, context: ExecutionContext): string {
-    if (!template) return template ?? '';
-    return template.replace(/\{\{(.+?)\}\}/g, (_match, path: string) => {
-      const keys = path.trim().split('.');
-      let value: unknown = context;
-      for (const key of keys) {
-        if (value && typeof value === 'object') {
-          value = (value as Record<string, unknown>)[key];
-        } else {
-          return '';
-        }
-      }
-      return typeof value === 'object' ? JSON.stringify(value) : String(value ?? '');
-    });
-  }
 }
+

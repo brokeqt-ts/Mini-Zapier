@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CryptoService } from '../common/crypto/crypto.service';
 
 export interface CreateDbConnectionDto {
   label: string;
@@ -8,7 +9,10 @@ export interface CreateDbConnectionDto {
 
 @Injectable()
 export class DbConnectionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private crypto: CryptoService,
+  ) {}
 
   async list(userId: string) {
     return this.prisma.dbConnection.findMany({
@@ -20,7 +24,11 @@ export class DbConnectionsService {
 
   async create(userId: string, dto: CreateDbConnectionDto) {
     return this.prisma.dbConnection.create({
-      data: { userId, ...dto },
+      data: {
+        userId,
+        label: dto.label,
+        connectionString: this.crypto.encrypt(dto.connectionString),
+      },
       select: { id: true, label: true, createdAt: true },
     });
   }
@@ -29,9 +37,13 @@ export class DbConnectionsService {
     const conn = await this.prisma.dbConnection.findUnique({ where: { id } });
     if (!conn) throw new NotFoundException();
     if (conn.userId !== userId) throw new ForbiddenException();
+    const data: Partial<CreateDbConnectionDto> = { ...dto };
+    if (dto.connectionString) {
+      data.connectionString = this.crypto.encrypt(dto.connectionString);
+    }
     return this.prisma.dbConnection.update({
       where: { id },
-      data: dto,
+      data,
       select: { id: true, label: true, createdAt: true },
     });
   }
@@ -45,6 +57,11 @@ export class DbConnectionsService {
   }
 
   async getById(id: string) {
-    return this.prisma.dbConnection.findUnique({ where: { id } });
+    const conn = await this.prisma.dbConnection.findUnique({ where: { id } });
+    if (!conn) return null;
+    return {
+      ...conn,
+      connectionString: this.crypto.decrypt(conn.connectionString),
+    };
   }
 }

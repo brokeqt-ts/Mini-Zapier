@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { NodeType } from '@prisma/client';
-import { PrismaClient } from '@prisma/client';
+import { Pool } from 'pg';
 import {
   ActionExecutor,
   ExecutionContext,
 } from './action-executor.interface';
 import { PrismaService } from '../../prisma/prisma.service';
+import { resolveContextPath } from './interpolate.util';
 
 @Injectable()
 export class DatabaseQueryExecutor implements ActionExecutor {
@@ -33,46 +34,40 @@ export class DatabaseQueryExecutor implements ActionExecutor {
       );
     }
 
-    const query = this.interpolate(config.query as string, context);
-    if (!query?.trim()) {
+    const queryTemplate = config.query as string;
+    if (!queryTemplate?.trim()) {
       throw new Error('Узел ACTION_DB_QUERY: SQL-запрос не задан.');
     }
 
-    const readOnly = config.readOnly !== false;
+    const { sql, params } = this.buildParameterizedQuery(queryTemplate, context);
 
-    const client = new PrismaClient({
-      datasources: { db: { url: connectionString } },
-    });
-
+    const pool = new Pool({ connectionString });
     try {
-      await client.$connect();
-
-      let result: unknown;
-      if (readOnly) {
-        result = await client.$queryRawUnsafe(query);
-      } else {
-        result = await client.$executeRawUnsafe(query);
-      }
-
-      return { rows: result, rowCount: Array.isArray(result) ? result.length : result };
+      const result = await pool.query(sql, params);
+      return {
+        rows: result.rows,
+        rowCount: result.rowCount ?? result.rows.length,
+      };
     } finally {
-      await client.$disconnect();
+      await pool.end();
     }
   }
 
-  private interpolate(template: string, context: ExecutionContext): string {
-    if (!template) return template;
-    return template.replace(/\{\{(.+?)\}\}/g, (_match, path: string) => {
-      const keys = path.trim().split('.');
-      let value: unknown = context;
-      for (const key of keys) {
-        if (value && typeof value === 'object') {
-          value = (value as Record<string, unknown>)[key];
-        } else {
-          return '';
-        }
-      }
-      return typeof value === 'object' ? JSON.stringify(value) : String(value ?? '');
+  /**
+   * Converts a {{path.to.value}} template into a parameterized SQL query.
+   * Each interpolated value becomes a positional parameter ($1, $2, …)
+   * so user-supplied data is never concatenated directly into the SQL string.
+   */
+  private buildParameterizedQuery(
+    template: string,
+    context: ExecutionContext,
+  ): { sql: string; params: unknown[] } {
+    const params: unknown[] = [];
+    const sql = template.replace(/\{\{(.+?)\}\}/g, (_match, path: string) => {
+      const value = resolveContextPath(path, context);
+      params.push(value ?? null);
+      return `$${params.length}`;
     });
+    return { sql, params };
   }
 }

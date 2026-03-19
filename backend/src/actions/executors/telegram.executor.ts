@@ -5,6 +5,7 @@ import {
   ActionExecutor,
   ExecutionContext,
 } from './action-executor.interface';
+import { interpolate } from './interpolate.util';
 
 @Injectable()
 export class TelegramExecutor implements ActionExecutor {
@@ -15,8 +16,8 @@ export class TelegramExecutor implements ActionExecutor {
     context: ExecutionContext,
   ): Promise<Record<string, unknown>> {
     const botToken = config.botToken as string;
-    const chatId = this.interpolate(config.chatId as string, context);
-    const text = this.interpolate(config.messageTemplate as string, context);
+    const chatId = interpolate(config.chatId as string, context);
+    const text = interpolate(config.messageTemplate as string, context);
 
     if (!text?.trim()) {
       throw new Error('Узел ACTION_TELEGRAM: текст сообщения не заполнен. Укажите messageTemplate в настройках узла.');
@@ -34,19 +35,5 @@ export class TelegramExecutor implements ActionExecutor {
     };
   }
 
-  private interpolate(template: string, context: ExecutionContext): string {
-    if (!template) return template ?? '';
-    return template.replace(/\{\{(.+?)\}\}/g, (_match, path: string) => {
-      const keys = path.trim().split('.');
-      let value: unknown = context;
-      for (const key of keys) {
-        if (value && typeof value === 'object') {
-          value = (value as Record<string, unknown>)[key];
-        } else {
-          return '';
-        }
-      }
-      return typeof value === 'object' ? JSON.stringify(value) : String(value ?? '');
-    });
-  }
 }
+

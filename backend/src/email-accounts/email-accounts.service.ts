@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CryptoService } from '../common/crypto/crypto.service';
 
 export interface CreateEmailAccountDto {
   label: string;
@@ -13,7 +14,10 @@ export interface CreateEmailAccountDto {
 
 @Injectable()
 export class EmailAccountsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private crypto: CryptoService,
+  ) {}
 
   async list(userId: string) {
     return this.prisma.emailAccount.findMany({
@@ -25,7 +29,11 @@ export class EmailAccountsService {
 
   async create(userId: string, dto: CreateEmailAccountDto) {
     const account = await this.prisma.emailAccount.create({
-      data: { userId, ...dto },
+      data: {
+        userId,
+        ...dto,
+        smtpPass: this.crypto.encrypt(dto.smtpPass),
+      },
       select: { id: true, label: true, smtpHost: true, smtpPort: true, smtpUser: true, imapHost: true, imapPort: true, createdAt: true },
     });
     return account;
@@ -35,9 +43,13 @@ export class EmailAccountsService {
     const account = await this.prisma.emailAccount.findUnique({ where: { id } });
     if (!account) throw new NotFoundException();
     if (account.userId !== userId) throw new ForbiddenException();
+    const data = { ...dto };
+    if (dto.smtpPass) {
+      data.smtpPass = this.crypto.encrypt(dto.smtpPass);
+    }
     return this.prisma.emailAccount.update({
       where: { id },
-      data: dto,
+      data,
       select: { id: true, label: true, smtpHost: true, smtpPort: true, smtpUser: true, imapHost: true, imapPort: true, createdAt: true },
     });
   }
@@ -51,6 +63,11 @@ export class EmailAccountsService {
   }
 
   async getById(id: string) {
-    return this.prisma.emailAccount.findUnique({ where: { id } });
+    const account = await this.prisma.emailAccount.findUnique({ where: { id } });
+    if (!account) return null;
+    return {
+      ...account,
+      smtpPass: this.crypto.decrypt(account.smtpPass),
+    };
   }
 }

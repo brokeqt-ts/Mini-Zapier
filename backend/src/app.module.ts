@@ -3,7 +3,9 @@ import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import * as path from 'path';
 import { BullModule } from '@nestjs/bullmq';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
+import { CryptoModule } from './common/crypto/crypto.module';
 import { AuthModule } from './auth/auth.module';
 import { WorkflowsModule } from './workflows/workflows.module';
 import { ExecutionModule } from './execution/execution.module';
@@ -20,6 +22,12 @@ import { DbConnectionsModule } from './db-connections/db-connections.module';
       isGlobal: true,
       envFilePath: path.resolve(__dirname, '../../.env'),
     }),
+    ThrottlerModule.forRoot([{
+      name: 'default',
+      ttl: 60_000,
+      limit: 100,
+    }]),
+    CryptoModule,
     ServeStaticModule.forRoot({
       rootPath: path.join(__dirname, '..', '..', 'frontend', 'dist'),
       exclude: ['/api/(.*)'],

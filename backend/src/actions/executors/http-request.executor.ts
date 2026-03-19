@@ -5,6 +5,7 @@ import {
   ActionExecutor,
   ExecutionContext,
 } from './action-executor.interface';
+import { interpolate } from './interpolate.util';
 
 @Injectable()
 export class HttpRequestExecutor implements ActionExecutor {
@@ -14,7 +15,7 @@ export class HttpRequestExecutor implements ActionExecutor {
     config: Record<string, unknown>,
     context: ExecutionContext,
   ): Promise<Record<string, unknown>> {
-    const url = this.interpolate(config.url as string, context);
+    const url = interpolate(config.url as string, context);
     const method = (config.method as string) || 'GET';
 
     // headers can be stored as JSON string (from the UI builder) or plain object
@@ -26,11 +27,11 @@ export class HttpRequestExecutor implements ActionExecutor {
     }
     const headers: Record<string, string> = {};
     for (const [k, v] of Object.entries(rawHeaders)) {
-      headers[k] = this.interpolate(v, context);
+      headers[k] = interpolate(v, context);
     }
 
     const body = config.body
-      ? this.interpolate(config.body as string, context)
+      ? interpolate(config.body as string, context)
       : undefined;
     const timeout = (config.timeout as number) || 30000;
 
@@ -49,19 +50,5 @@ export class HttpRequestExecutor implements ActionExecutor {
     };
   }
 
-  private interpolate(template: string, context: ExecutionContext): string {
-    if (!template) return template ?? '';
-    return template.replace(/\{\{(.+?)\}\}/g, (_match, path: string) => {
-      const keys = path.trim().split('.');
-      let value: unknown = context;
-      for (const key of keys) {
-        if (value && typeof value === 'object') {
-          value = (value as Record<string, unknown>)[key];
-        } else {
-          return '';
-        }
-      }
-      return typeof value === 'object' ? JSON.stringify(value) : String(value ?? '');
-    });
-  }
 }
+

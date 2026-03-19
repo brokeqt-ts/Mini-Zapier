@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ActionsService } from '../actions/actions.service';
 import { ExecutionLoggerService } from '../logging/execution-logger.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { CryptoService } from '../common/crypto/crypto.service';
 import { ExecutionContext } from '../actions/executors/action-executor.interface';
 import { WorkflowNode, WorkflowEdge, NodeType } from '@prisma/client';
 
@@ -65,6 +66,7 @@ export class ExecutionEngineService {
     private executionLogger: ExecutionLoggerService,
     private notifications: NotificationsService,
     private config: ConfigService,
+    private crypto: CryptoService,
   ) {}
 
   async run(executionId: string): Promise<void> {
@@ -292,6 +294,13 @@ export class ExecutionEngineService {
     return sorted;
   }
 
+  /**
+   * Blocked token list for condition expressions.
+   * Prevents access to Node.js globals, prototype chains, and dynamic code execution.
+   */
+  private static readonly CONDITION_BLOCKED =
+    /\b(eval|Function|require|import|process|global|globalThis|window|document|__proto__|constructor|prototype|fetch|XMLHttpRequest|setTimeout|setInterval|clearTimeout|clearInterval|Buffer|module|exports)\b/;
+
   private evaluateConditions(
     nodeId: string,
     edges: WorkflowEdge[],
@@ -303,8 +312,18 @@ export class ExecutionEngineService {
     return incomingEdges.some((edge) => {
       if (!edge.conditionExpr) return true;
       try {
-        const fn = new Function('context', `return ${edge.conditionExpr}`);
-        return Boolean(fn(context));
+        if (ExecutionEngineService.CONDITION_BLOCKED.test(edge.conditionExpr)) {
+          this.logger.warn(
+            `Condition for edge ${edge.id} contains forbidden token — skipping`,
+          );
+          return false;
+        }
+        // new Function is intentionally used here after blocklist validation.
+        // The expression may only reference the `context` argument; all dangerous
+        // globals are blocked above.
+        // eslint-disable-next-line no-new-func
+        const fn = new Function('context', `"use strict";\nreturn Boolean(${edge.conditionExpr});`);
+        return fn(context);
       } catch {
         this.logger.warn(
           `Failed to evaluate condition for edge ${edge.id}: ${edge.conditionExpr}`,
@@ -332,7 +351,7 @@ export class ExecutionEngineService {
         smtpHost: user.smtpHost,
         smtpPort: user.smtpPort,
         smtpUser: user.smtpUser,
-        smtpPass: user.smtpPass,
+        smtpPass: user.smtpPass ? this.crypto.decrypt(user.smtpPass) : null,
       };
     }
 

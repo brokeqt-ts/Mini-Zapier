@@ -13,10 +13,13 @@ export interface UserProfile {
 
 export const authApi = {
   register: (data: { email: string; password: string; name?: string }) =>
-    api.post<{ accessToken: string }>('/auth/register', data),
+    api.post<{ ok: boolean }>('/auth/register', data),
 
   login: (data: { email: string; password: string }) =>
-    api.post<{ accessToken: string }>('/auth/login', data),
+    api.post<{ ok: boolean }>('/auth/login', data),
+
+  logout: () =>
+    api.post<{ ok: boolean }>('/auth/logout'),
 
   getProfile: () =>
     api.get<UserProfile>('/auth/me'),
