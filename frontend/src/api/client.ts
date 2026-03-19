@@ -10,7 +10,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      window.location.href = '/login';
+      const path = window.location.pathname;
+      // Don't redirect if already on auth pages or if checking profile
+      if (path !== '/login' && path !== '/register') {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   },
